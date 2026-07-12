@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Postfix Integration — EasyMail Documentation</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrapper">
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <a href="index.html" class="logo">EasyMail</a>
+        <div class="logo-sub">Enterprise Mail Gateway</div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">Getting Started</div>
+        <a href="index.html">Product Overview</a>
+        <a href="setup.html">Installation &amp; Deployment</a>
+        <a href="quickstart.html">Quick Start</a>
+
+        <div class="nav-section">Admin Panel</div>
+        <a href="admin.html">Admin Panel Guide</a>
+        <a href="postfix.html" class="active">Postfix Integration</a>
+
+        <div class="nav-section">User Guide</div>
+        <a href="clients.html">Client Configuration</a>
+        <a href="webmail.html">Webmail</a>
+
+        <div class="nav-section">Filter Reference</div>
+        <a href="features.html">Built-in Features List</a>
+
+        <div class="nav-section">Operations</div>
+        <a href="monitor.html">Service Monitoring</a>
+        <a href="faq.html">FAQ</a>
+    </nav>
+</aside>
+
+<main class="content">
+
+<h1>Postfix Integration</h1>
+
+<p>EasyMail does not handle SMTP inbound; it relies on Postfix as the edge MTA. Postfix forwards mail to EasyMail for anti-spam filtering via the Milter protocol, and filtered mail is delivered to EasyMail storage via LMTP.</p>
+
+<h2>Integration Architecture</h2>
+
+<pre>
+Sender ──SMTP──→ Postfix (25/587)
+                      │
+                      ├── Milter (10026) ──→ EasyMail Filtering Decision
+                      │                        └── accept / reject / spam / quarantine
+                      │
+                      └── LMTP (10027) ──→ EasyMail Delivery
+                                             └── Write SQLite Index + Disk Storage</pre>
+
+<h2>Installing Postfix</h2>
+
+<pre>apt install postfix
+# Select "Internet Site" during installation, enter your domain</pre>
+
+<h2>Configuring main.cf</h2>
+
+<p>Edit <code>/etc/postfix/main.cf</code> and append the following configuration:</p>
+
+<pre># Mail domain lookup (via EasyMail Dovecot protocol proxy)
+virtual_mailbox_domains = tcp:192.168.1.1:10025
+virtual_mailbox_maps = tcp:192.168.1.1:10025
+
+# LMTP delivery (hand mail over to EasyMail storage)
+virtual_transport = lmtp:inet:192.168.1.1:10027
+
+# Milter anti-spam filtering
+smtpd_milters = inet:192.168.1.1:10026
+milter_default_action = accept
+
+# SMTP authentication (allow clients to send mail)
+smtpd_sasl_type = dovecot
+smtpd_sasl_path = inet:192.168.1.1:10025
+smtpd_sasl_auth_enable = yes
+smtpd_sasl_security_options = noanonymous
+
+# Recipient restrictions
+smtpd_recipient_restrictions =
+    permit_mynetworks,
+    permit_sasl_authenticated,
+    reject_unauth_destination
+
+# Do not rely on local user database
+local_recipient_maps =</pre>
+
+<div class="callout callout-warning">
+    <strong>Important</strong> Replace <code>192.168.1.1</code> with the actual IP address of your EasyMail server. The EasyMail Dovecot protocol proxy provides three services simultaneously: mail domain lookup, SASL authentication, and LMTP delivery.
+</div>
+
+<h3>Configuration Details</h3>
+
+<table>
+<thead>
+<tr><th>Parameter</th><th>Value</th><th>Purpose</th></tr>
+</thead>
+<tbody>
+<tr><td><code>virtual_mailbox_domains</code></td><td><code>tcp:IP:10025</code></td><td>Postfix queries EasyMail via TCP to verify whether a domain is valid</td></tr>
+<tr><td><code>virtual_mailbox_maps</code></td><td><code>tcp:IP:10025</code></td><td>Postfix checks whether a mailbox address exists in EasyMail</td></tr>
+<tr><td><code>virtual_transport</code></td><td><code>lmtp:inet:IP:10027</code></td><td>Delivers mail to EasyMail via LMTP</td></tr>
+<tr><td><code>smtpd_milters</code></td><td><code>inet:IP:10026</code></td><td>Milter filter chain; EasyMail analyzes the mail and returns a decision</td></tr>
+<tr><td><code>smtpd_sasl_*</code></td><td>—</td><td>SMTP authentication; clients must log in with their mailbox account to send mail</td></tr>
+<tr><td><code>smtpd_recipient_restrictions</code></td><td>—</td><td>Recipient restriction rules, evaluated in order</td></tr>
+</tbody>
+</table>
+
+<h3>master.cf</h3>
+
+<p>The default <code>master.cf</code> works out of the box without modification.</p>
+
+<h2>Verifying the Integration</h2>
+
+<h3>1. Verify Domain Lookup</h3>
+<pre>postmap -q example.com tcp:192.168.1.1:10025</pre>
+<p>Should return <code>OK</code> (if the domain has been added in the EasyMail admin panel).</p>
+
+<h3>2. Verify Mailbox Lookup</h3>
+<pre>postmap -q user@example.com tcp:192.168.1.1:10025</pre>
+<p>Should return <code>OK</code> (if the mailbox has been created).</p>
+
+<h3>3. Send a Test Email</h3>
+<pre>echo "Hello from test" | sendmail user@example.com</pre>
+<p>Check EasyMail logs to confirm the mail was delivered.</p>
+
+<h3>4. Check Postfix Logs</h3>
+<pre>tail -f /var/log/mail.log</pre>
+
+<h2>Common Postfix Configurations</h2>
+
+<h3>Allow Internal Network Sending</h3>
+<pre>mynetworks = 127.0.0.0/8 192.168.0.0/16 10.0.0.0/8</pre>
+
+<h3>Limit Single Email Size</h3>
+<pre>message_size_limit = 25600000  # 25MB</pre>
+
+<h3>Concurrent Connection Limits</h3>
+<pre>smtpd_client_connection_count_limit = 10
+smtpd_client_message_rate_limit = 30</pre>
+
+<h3>TLS Configuration (587 STARTTLS)</h3>
+<pre>smtpd_tls_cert_file = /etc/ssl/certs/postfix.pem
+smtpd_tls_key_file = /etc/ssl/private/postfix.key
+smtpd_tls_security_level = may
+smtpd_tls_loglevel = 1</pre>
+
+<h2>Postfix Agent Remote Management</h2>
+
+<p>EasyMail ships with a <code>postfix-agent</code> tool that runs on the Postfix host and communicates with the EasyMail admin panel via HTTP, enabling remote management of Postfix instances.</p>
+
+<h3>How It Works</h3>
+
+<p><code>postfix-agent</code> starts an HTTP service on the Postfix host and actively heartbeats to the EasyMail admin panel. The agent authenticates using <code>--agent-token</code>; only agents with a valid token can be recognized and controlled by the admin panel.</p>
+
+<pre>
+Postfix Host                          EasyMail Server
+┌──────────────────┐     HTTP/Heartbeat ┌────────────────────┐
+│  postfix-agent   │ ────────────────→ │  Admin Panel Web   │
+│  --agent-token   │ ←──────────────── │  + API Service     │
+│                  │   Config/Command  │                    │
+│  Operate postfix │                   │  Admin Web Ops     │
+│  (postqueue,     │                   │                    │
+│   postsuper,     │                   │                    │
+│   postfix reload)│                   │                    │
+└──────────────────┘                   └────────────────────┘</pre>
+
+<h3>Deployment</h3>
+
+<p>Download the <code>postfix-agent</code> binary distributed by EasyMail onto your Postfix host, then run:</p>
+
+<pre>./postfix-agent --agent-token=your-agent-token-here</pre>
+
+<p>Parameters:</p>
+
+<table>
+<thead>
+<tr><th>Flag</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>--agent-token</code></td><td>Agent identity token, generated in the admin panel for authentication</td></tr>
+<tr><td><code>--easymail-addr</code></td><td>EasyMail server address (default <code>http://localhost:8080</code>)</td></tr>
+<tr><td><code>--listen</code></td><td>Local listen address (default <code>:8081</code>, for health checks)</td></tr>
+</tbody>
+</table>
+
+<p>It is recommended to manage the agent process with systemd or supervisord to ensure it starts on boot. After startup, you should see output similar to:</p>
+
+<pre>[INFO] Registering with EasyMail at http://192.168.1.1:8080
+[INFO] Agent registered successfully, id: agent-xxxx</pre>
+
+<h3>Admin Panel — Adding a Postfix Agent</h3>
+
+<p>In the EasyMail admin panel:</p>
+
+<ol>
+<li>Go to <strong>System Settings → Postfix Agents</strong></li>
+<li>Click <strong>Add Agent</strong></li>
+<li>Enter a name for the agent (e.g. "Primary Postfix Node")</li>
+<li>The system generates an <code>agent_token</code> (e.g. <code>ema_xxxxxxxxxxxx</code>)</li>
+<li>Copy this token to the <code>postfix-agent --agent-token=...</code> command on your Postfix host</li>
+<li>After saving, the agent appears in the list with status <span class="badge badge-warning">Waiting for Connection</span></li>
+</ol>
+
+<p>Once the agent starts and registers successfully, the status changes to <span class="badge badge-success">Online</span>, displaying the last heartbeat time, IP address, and other info.</p>
+
+<h3>Admin Panel — Applying EasyMail Host Address to Postfix Config</h3>
+
+<p>After the agent is registered, go to <strong>Postfix Configuration Management</strong> and select a registered agent as the target deployment host:</p>
+
+<ol>
+<li>Go to <strong>System Settings → Postfix Configuration</strong></li>
+<li>Edit or create a Postfix configuration (main.cf / master.cf snippet)</li>
+<li>In the <strong>Target</strong> dropdown, select a registered agent (displayed as "Agent Name - IP Address")</li>
+<li>The system automatically injects the EasyMail Host Address into the configuration template to generate the final main.cf</li>
+</ol>
+
+<p>Use the <code>{{.EasyMailHost}}</code> placeholder in your templates to reference the EasyMail server address:</p>
+
+<pre># Placeholders in the template are replaced with the actual EasyMail address during push
+virtual_mailbox_domains = tcp:{{.EasyMailHost}}:10025
+virtual_mailbox_maps = tcp:{{.EasyMailHost}}:10025
+virtual_transport = lmtp:inet:{{.EasyMailHost}}:10027
+smtpd_milters = inet:{{.EasyMailHost}}:10026</pre>
+
+<h3>Push and Deploy Configuration</h3>
+
+<p>After editing the configuration:</p>
+
+<ol>
+<li>Click <strong>Deploy</strong> on the Postfix Configuration page</li>
+<li>Select the target agent(s) (check the Postfix hosts to deploy to)</li>
+<li>Review the configuration diff — the system shows what will be added, modified, or removed</li>
+<li>Click <strong>Confirm Push</strong></li>
+</ol>
+
+<p>Deployment flow:</p>
+
+<pre>
+Admin Panel                   Agent                       Postfix
+   │                           │                           │
+   ├── Push config ──────────→ │                           │
+   │                           ├── Write to /etc/postfix/  │
+   │                           ├── Validate config         │
+   │                           │   postfix check           │
+   │                           ├── Reload service          │
+   │                           │   postfix reload          │
+   │                           ├── Return result ────────→ │
+   │                           │                           │
+   │  ── Show deploy result ── │                           │
+   │  Success/Failure + Logs   │                           │</pre>
+
+<p>Every push is recorded in the deployment history, including timestamp, operator, configuration summary, and execution result.</p>
+
+<h3>Queue Management</h3>
+
+<p>Through the agent, you can remotely view and manage the Postfix mail queue from the admin panel:</p>
+
+<h4>Viewing Queue Status</h4>
+
+<ol>
+<li>Go to <strong>System Settings → Postfix Agents</strong></li>
+<li>Click <strong>Queue Management</strong> on the target agent</li>
+<li>The system displays a queue overview:</li>
+</ol>
+
+<table>
+<thead>
+<tr><th>Queue Type</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td>active</td><td>Mail currently being delivered</td></tr>
+<tr><td>deferred</td><td>Mail that failed delivery, waiting for retry</td></tr>
+<tr><td>bounce</td><td>Bounced mail queue</td></tr>
+<tr><td>hold</td><td>Mail placed on hold</td></tr>
+<tr><td>incoming</td><td>Mail currently being received</td></tr>
+</tbody>
+</table>
+
+<h4>Queue Operations</h4>
+
+<p>The following remote operations are supported:</p>
+
+<ul>
+<li><strong>Flush Queue</strong> — Immediately retry all mail in the deferred queue (equivalent to <code>postqueue -f</code>)</li>
+<li><strong>Delete Mail</strong> — Delete a specific mail by queue ID (equivalent to <code>postsuper -d &lt;queue_id&gt;</code>)</li>
+<li><strong>Hold / Release</strong> — Move mail to the hold queue or release it from hold (equivalent to <code>postsuper -h/-H &lt;queue_id&gt;</code>)</li>
+<li><strong>Purge Queue</strong> — Delete all mail in a specific queue (equivalent to <code>postsuper -d ALL</code>)</li>
+</ul>
+
+<p>All queue operations are logged in the audit trail.</p>
+
+<h4>Real-time Logs</h4>
+
+<p>The queue management page also displays real-time logs from the agent, making it easier to diagnose delivery issues:</p>
+
+<pre>2026/07/12 10:23:45 [mail.log] postfix/qmgr[12345]: AABBCCDD: from=&lt;user@example.com&gt;,
+    size=12345, nrcpt=1 (queue active)
+2026/07/12 10:23:46 [mail.log] postfix/smtp[12346]: AABBCCDD: to=&lt;dest@other.com&gt;,
+    relay=mail.other.com[1.2.3.4]:25, delay=0.5, status=sent (250 2.0.0 Ok)</pre>
+
+</main>
+</div>
+</body>
+</html>

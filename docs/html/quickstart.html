@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快速入门 — EasyMail 文档</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrapper">
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <a href="index.html" class="logo">EasyMail</a>
+        <div class="logo-sub">企业邮件网关</div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">入门</div>
+        <a href="index.html">产品概述</a>
+        <a href="setup.html">安装部署</a>
+        <a href="quickstart.html" class="active">快速入门</a>
+
+        <div class="nav-section">管理后台</div>
+        <a href="admin.html">后台功能指南</a>
+        <a href="postfix.html">Postfix 集成</a>
+
+        <div class="nav-section">使用指南</div>
+        <a href="clients.html">客户端配置</a>
+        <a href="webmail.html">Webmail</a>
+
+        <div class="nav-section">过滤参考</div>
+        <a href="features.html">内置特征列表</a>
+
+        <div class="nav-section">运维</div>
+        <a href="monitor.html">服务监控</a>
+        <a href="faq.html">常见问题</a>
+    </nav>
+</aside>
+
+<main class="content">
+
+<h1>快速入门</h1>
+
+<p>本文档引导完成从部署到成功收发邮件的完整流程。如果你已完成安装部署，可以直接从第一步开始。</p>
+
+<h2>业务流程图</h2>
+
+<pre>
+管理后台(8000)                    Postfix 服务器
+    │                                 │
+    ├─ 1. 添加邮件域名 ───────────────┤
+    ├─ 2. 创建邮箱账户 ───────────────┤
+    ├─ 3. 配置 Postfix main.cf ──────┤
+    └─ 4. 验证邮件收发 ───────────────┴─→ 5. 配置邮件客户端
+</pre>
+
+<div class="step">
+    <div class="step-num">1</div>
+    <h3>添加邮件域名</h3>
+    <p>登录管理后台 <code>http://服务器IP:8000</code>，进入【域名管理】页面。</p>
+    <p>点击"添加域名"，填写以下信息：</p>
+    <ul>
+        <li><strong>域名</strong>：你的邮件域名，例如 <code>example.com</code></li>
+        <li><strong>描述</strong>：可选的中文备注</li>
+    </ul>
+    <p>添加成功后，域名列表中会显示新条目。此时域名状态为"启用"。你需要为该域名配置 MX 记录，将邮件指向你的 Postfix 服务器：</p>
+    <pre>example.com.  IN  MX  10  mail.example.com.
+mail.example.com.  IN  A   你的服务器公网IP</pre>
+    <div class="callout callout-info">
+        <strong>提示</strong> 如果只是内部测试，可以跳过 DNS 配置，直接在 Postfix 的 <code>mynetworks</code> 中放行内部发信 IP。
+    </div>
+</div>
+
+<div class="step">
+    <div class="step-num">2</div>
+    <h3>创建邮箱账户</h3>
+    <p>进入【邮箱管理】页面（或在域名详情中点击"邮箱"选项卡）。</p>
+    <p>点击"添加邮箱"，填写：</p>
+    <ul>
+        <li><strong>邮箱地址</strong>：例如 <code>user@example.com</code></li>
+        <li><strong>密码</strong>：设置登录密码</li>
+        <li><strong>所属域名</strong>：选择上一步添加的域名</li>
+        <li><strong>邮箱容量</strong>：限制邮箱可使用的磁盘空间</li>
+    </ul>
+    <p>创建成功后，该邮箱即可用于 IMAP 登录和收信。</p>
+    <div class="callout callout-success">
+        <strong>注意</strong> 创建邮箱后，系统会自动在存储目录下创建该用户的文件夹结构（收件箱、已发送、垃圾邮件、垃圾箱等）。
+    </div>
+</div>
+
+<div class="step">
+    <div class="step-num">3</div>
+    <h3>配置 Postfix</h3>
+    <p>在 Postfix 服务器上编辑 <code>/etc/postfix/main.cf</code>：</p>
+    <pre># 邮件域名列表（从 EasyMail 管理后台同步）
+virtual_mailbox_domains = tcp:192.168.1.1:10025
+virtual_mailbox_maps = tcp:192.168.1.1:10025
+
+# LMTP 投递到 EasyMail
+virtual_transport = lmtp:inet:192.168.1.1:10027
+
+# Milter 反垃圾过滤
+smtpd_milters = inet:192.168.1.1:10026
+milter_default_action = accept
+
+# SMTP 认证（通过 EasyMail 的 Dovecot 协议代理）
+smtpd_sasl_type = dovecot
+smtpd_sasl_path = inet:192.168.1.1:10025
+smtpd_sasl_auth_enable = yes
+smtpd_recipient_restrictions =
+    permit_mynetworks,
+    permit_sasl_authenticated,
+    reject_unauth_destination
+smtpd_sasl_security_options = noanonymous
+local_recipient_maps =</pre>
+    <p>将 <code>192.168.1.1</code> 替换为 EasyMail 服务器的实际 IP 地址。</p>
+    <p>修改后重启 Postfix：</p>
+    <pre>systemctl restart postfix</pre>
+    <div class="callout callout-warning">
+        <strong>注意</strong> EasyMail 的 Dovecot 认证代理监听在 TCP 10025 端口，同时提供域名查询和认证服务。Postfix 通过 <code>tcp:</code> 协议查询域名是否存在，也通过 <code>dovecot</code> SASL 进行 SMTP 认证。
+    </div>
+</div>
+
+<div class="step">
+    <div class="step-num">4</div>
+    <h3>验证邮件收发</h3>
+    <p>验证步骤如下：</p>
+    <h4>4.1 确认 Postfix 能识别邮件域名</h4>
+    <pre>postmap -q example.com tcp:192.168.1.1:10025</pre>
+    <p>应输出 <code>OK</code> 或邮件域名的相关信息。</p>
+
+    <h4>4.2 发送测试邮件</h4>
+    <p>从外部邮箱（如 Gmail、QQ 邮箱）向 <code>user@example.com</code> 发送一封测试邮件。或者使用命令行发送：</p>
+    <pre>echo "Test email body" | mail -s "Test Subject" user@example.com</pre>
+    <p>观察 EasyMail 日志，应该看到类似以下内容：</p>
+    <pre>time="..." level=info msg="milter: filter result=accept" module=milter
+time="..." level=info msg="lmtp: delivered mail to user@example.com" module=lmtp</pre>
+
+    <h4>4.3 检查邮件是否到达</h4>
+    <p>通过管理后台的【投递日志】查看邮件投递记录。日志会显示每封邮件的发件人、收件人、过滤结果和投递状态。</p>
+
+    <h4>4.4 使用 IMAP 客户端查看</h4>
+    <p>使用任意 IMAP 客户端连接 EasyMail 服务器（端口 143），查看收件箱。配置参数：</p>
+    <ul>
+        <li><strong>IMAP 服务器</strong>：你的服务器 IP</li>
+        <li><strong>IMAP 端口</strong>：143（明文）或 993（SSL）</li>
+        <li><strong>SMTP 服务器</strong>：你的 Postfix 服务器 IP</li>
+        <li><strong>SMTP 端口</strong>：587（STARTTLS）或 25</li>
+        <li><strong>用户名</strong>：完整的邮箱地址，如 <code>user@example.com</code></li>
+        <li><strong>密码</strong>：创建邮箱时设置的密码</li>
+    </ul>
+    <p>详细的客户端配置请参考 <a href="clients.html">客户端配置指南</a>。</p>
+</div>
+
+<div class="step">
+    <div class="step-num">5</div>
+    <h3>配置反垃圾过滤</h3>
+    <p>邮件系统正常收发后，建议配置反垃圾过滤策略。进入管理后台的【过滤规则】页面：</p>
+    <ul>
+        <li>查看默认过滤规则</li>
+        <li>根据需要调整规则优先级</li>
+        <li>配置分类模型（可选，需要预先训练）</li>
+        <li>启用 ClamAV 病毒扫描（可选，需要安装 ClamAV）</li>
+    </ul>
+    <p>详细配置请参考 <a href="admin.html">后台功能指南</a> 中的过滤章节。</p>
+</div>
+
+<h2>后续操作</h2>
+
+<ul>
+    <li><a href="admin.html">深入管理后台</a> — 了解更多管理功能</li>
+    <li><a href="postfix.html">Postfix 集成指南</a> — 完整配置详解</li>
+    <li><a href="clients.html">邮件客户端配置</a> — Foxmail / Outlook / Thunderbird 详细配置</li>
+    <li><a href="webmail.html">Webmail 使用</a> — 浏览器端收发邮件</li>
+</ul>
+
+</main>
+</div>
+</body>
+</html>

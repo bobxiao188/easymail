@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webmail 使用指南 — EasyMail 文档</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrapper">
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <a href="index.html" class="logo">EasyMail</a>
+        <div class="logo-sub">企业邮件网关</div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">入门</div>
+        <a href="index.html">产品概述</a>
+        <a href="setup.html">安装部署</a>
+        <a href="quickstart.html">快速入门</a>
+
+        <div class="nav-section">管理后台</div>
+        <a href="admin.html">后台功能指南</a>
+        <a href="postfix.html">Postfix 集成</a>
+
+        <div class="nav-section">使用指南</div>
+        <a href="clients.html">客户端配置</a>
+        <a href="webmail.html" class="active">Webmail</a>
+
+        <div class="nav-section">过滤参考</div>
+        <a href="features.html">内置特征列表</a>
+
+        <div class="nav-section">运维</div>
+        <a href="monitor.html">服务监控</a>
+        <a href="faq.html">常见问题</a>
+    </nav>
+</aside>
+
+<main class="content">
+
+<h1>Webmail 使用指南</h1>
+
+<p>EasyMail 提供基于浏览器的 Webmail 客户端。访问 <code>http://服务器IP:8080</code>，使用完整的邮箱地址和密码登录。</p>
+
+<h2>登录</h2>
+<p>在登录页面输入：</p>
+<ul>
+    <li><strong>邮箱地址</strong>：完整的邮箱地址，如 <code>user@example.com</code></li>
+    <li><strong>密码</strong>：创建邮箱时设置的密码</li>
+</ul>
+<div class="callout callout-info">
+    <strong>提示</strong> Webmail 和 IMAP 共享同一套用户凭据。登录 Webmail 后，IMAP 客户端也可以同时访问同一邮箱。
+</div>
+
+<h2>邮件管理</h2>
+
+<h3>邮件列表</h3>
+<p>登录后默认进入收件箱，展示所有邮件列表。每封邮件显示：</p>
+<ul>
+    <li>发件人</li>
+    <li>主题</li>
+    <li>日期和时间</li>
+    <li>邮件大小</li>
+    <li>是否包含附件</li>
+    <li>阅读状态（已读/未读）</li>
+    <li>标签</li>
+</ul>
+
+<h3>邮件操作</h3>
+<ul>
+    <li><strong>阅读</strong>：点击邮件主题打开详情，查看发件人、收件人、正文和附件</li>
+    <li><strong>搜索</strong>：支持按发件人、收件人、主题、正文内容搜索邮件</li>
+    <li><strong>移动</strong>：选中邮件后移动到其他文件夹</li>
+    <li><strong>标记</strong>：标记为已读/未读、添加星标、设置标签</li>
+    <li><strong>删除</strong>：移入垃圾箱（可进一步永久删除或恢复）</li>
+    <li><strong>批量操作</strong>：支持多选后批量删除、移动、标记</li>
+    <li><strong>导出</strong>：下载邮件为 .eml 文件，或选中多封邮件打包为 ZIP 下载</li>
+</ul>
+
+<h3>写信</h3>
+<p>点击"写信"按钮，进入写信界面：</p>
+<ul>
+    <li><strong>收件人</strong>：直接输入邮箱地址，或从联系人列表选择</li>
+    <li><strong>抄送 / 密送</strong>：添加抄送和密送收件人</li>
+    <li><strong>主题</strong>：邮件主题</li>
+    <li><strong>正文</strong>：支持纯文本和 HTML 格式编辑</li>
+    <li><strong>附件</strong>：上传附件，支持拖拽</li>
+    <li><strong>保存草稿</strong>：未完成的邮件可以保存到草稿箱</li>
+</ul>
+
+<h3>回复与转发</h3>
+<ul>
+    <li><strong>回复</strong>：回复发件人</li>
+    <li><strong>回复全部</strong>：回复所有收件人（包括抄送）</li>
+    <li><strong>转发</strong>：将邮件转发给其他人</li>
+</ul>
+
+<h2>文件夹管理</h2>
+<p>系统预设以下文件夹：</p>
+
+<table>
+<thead>
+<tr><th>文件夹</th><th>用途</th></tr>
+</thead>
+<tbody>
+<tr><td>收件箱</td><td>接收的邮件</td></tr>
+<tr><td>已发送</td><td>已发送的邮件</td></tr>
+<tr><td>草稿箱</td><td>未完成保存的邮件</td></tr>
+<tr><td>垃圾邮件</td><td>被过滤规则判定为垃圾的邮件</td></tr>
+<tr><td>垃圾箱</td><td>已删除的邮件（可恢复）</td></tr>
+</tbody>
+</table>
+
+<p>用户可以创建自定义文件夹，将邮件分类存放。</p>
+
+<h2>联系人管理</h2>
+
+<h3>联系人列表</h3>
+<p>在【联系人】页面可以查看和管理所有联系人：</p>
+<ul>
+    <li>添加联系人（姓名、邮箱、电话、备注）</li>
+    <li>编辑和删除联系人</li>
+    <li>搜索联系人</li>
+    <li>导入/导出联系人</li>
+</ul>
+
+<h3>联系人群组</h3>
+<ul>
+    <li>创建群组，将联系人分组管理</li>
+    <li>批量发送邮件给群组成员</li>
+</ul>
+
+<h2>个人设置</h2>
+
+<h3>账户设置</h3>
+<ul>
+    <li>修改密码</li>
+    <li>修改个人资料（姓名、签名）</li>
+</ul>
+
+<h3>邮件设置</h3>
+<ul>
+    <li>每页显示邮件数</li>
+    <li>回复时是否包含原文</li>
+    <li>默认签名</li>
+</ul>
+
+<h2>安全退出</h2>
+<p>使用完毕后，点击右上角的退出按钮，安全退出 Webmail。</p>
+
+</main>
+</div>
+</body>
+</html>

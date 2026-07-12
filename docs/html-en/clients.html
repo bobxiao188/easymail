@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Configuration — EasyMail Documentation</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrapper">
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <a href="index.html" class="logo">EasyMail</a>
+        <div class="logo-sub">Enterprise Mail Gateway</div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">Getting Started</div>
+        <a href="index.html">Product Overview</a>
+        <a href="setup.html">Installation &amp; Deployment</a>
+        <a href="quickstart.html">Quick Start</a>
+
+        <div class="nav-section">Admin Panel</div>
+        <a href="admin.html">Admin Panel Guide</a>
+        <a href="postfix.html">Postfix Integration</a>
+
+        <div class="nav-section">User Guide</div>
+        <a href="clients.html" class="active">Client Configuration</a>
+        <a href="webmail.html">Webmail</a>
+
+        <div class="nav-section">Filter Reference</div>
+        <a href="features.html">Built-in Features List</a>
+
+        <div class="nav-section">Operations</div>
+        <a href="monitor.html">Service Monitoring</a>
+        <a href="faq.html">FAQ</a>
+    </nav>
+</aside>
+
+<main class="content">
+
+<h1>Email Client Configuration</h1>
+
+<p>EasyMail provides a full IMAP4rev1 service compatible with mainstream email clients. The following are the configuration parameters for each client.</p>
+
+<h2>Common Configuration Parameters</h2>
+
+<table>
+<thead>
+<tr><th>Parameter</th><th>Value</th></tr>
+</thead>
+<tbody>
+<tr><td>IMAP Server</td><td>Your EasyMail server IP or domain</td></tr>
+<tr><td>IMAP Port</td><td>143 (plaintext) or 993 (SSL/TLS)</td></tr>
+<tr><td>SMTP Server</td><td>Your Postfix server IP or domain</td></tr>
+<tr><td>SMTP Port</td><td>587 (STARTTLS) or 25 (plaintext)</td></tr>
+<tr><td>Username</td><td>Full email address, e.g. <code>user@example.com</code></td></tr>
+<tr><td>Password</td><td>The password set when creating the mailbox</td></tr>
+<tr><td>Authentication</td><td>Normal password (PLAIN / LOGIN)</td></tr>
+</tbody>
+</table>
+
+<div class="callout callout-info">
+    <strong>Note</strong> Port 25 is often blocked by ISPs; it is recommended that clients use port 587 to send mail. If IMAP uses 993 (SSL), it is also recommended to use encrypted ports 465 or 587 for SMTP.
+</div>
+
+<h2>Foxmail Configuration</h2>
+
+<div class="step">
+    <div class="step-num">1</div>
+    <h3>Open Foxmail, click "Tools" → "Account Management" → "New"</h3>
+</div>
+
+<div class="step">
+    <div class="step-num">2</div>
+    <h3>Enter your email address and password, then click "Manual Setup"</h3>
+</div>
+
+<div class="step">
+    <div class="step-num">3</div>
+    <h3>Fill in the server information</h3>
+    <table>
+    <thead>
+    <tr><th>Field</th><th>Value</th></tr>
+    </thead>
+    <tbody>
+    <tr><td>Incoming Server Type</td><td>IMAP</td></tr>
+    <tr><td>Incoming Server</td><td>Your EasyMail server IP</td></tr>
+    <tr><td>Incoming Port</td><td>143</td></tr>
+    <tr><td>SSL</td><td>Unchecked (or check if using port 993)</td></tr>
+    <tr><td>Outgoing Server</td><td>Your Postfix server IP</td></tr>
+    <tr><td>Outgoing Port</td><td>587</td></tr>
+    <tr><td>Outgoing server requires authentication</td><td>Checked</td></tr>
+    </tbody>
+    </table>
+</div>
+
+<div class="step">
+    <div class="step-num">4</div>
+    <h3>Click "Test", confirm the connection is successful, then save</h3>
+</div>
+
+<h2>Outlook Configuration</h2>
+
+<div class="step">
+    <div class="step-num">1</div>
+    <h3>Open Outlook, click "File" → "Add Account"</h3>
+</div>
+
+<div class="step">
+    <div class="step-num">2</div>
+    <h3>Select "Manual setup or additional server types", click "Next"</h3>
+</div>
+
+<div class="step">
+    <div class="step-num">3</div>
+    <h3>Select "POP or IMAP", click "Next"</h3>
+</div>
+
+<div class="step">
+    <div class="step-num">4</div>
+    <h3>Fill in the account information</h3>
+    <table>
+    <thead>
+    <tr><th>Field</th><th>Value</th></tr>
+    </thead>
+    <tbody>
+    <tr><td>Your Name</td><td>Display name</td></tr>
+    <tr><td>Email Address</td><td><code>user@example.com</code></td></tr>
+    <tr><td>Account Type</td><td>IMAP</td></tr>
+    <tr><td>Incoming Mail Server</td><td>EasyMail server IP</td></tr>
+    <tr><td>Outgoing Mail Server</td><td>Postfix server IP</td></tr>
+    <tr><td>User Name</td><td><code>user@example.com</code> (full email address)</td></tr>
+    <tr><td>Password</td><td>Mailbox password</td></tr>
+    </tbody>
+    </table>
+</div>
+
+<div class="step">
+    <div class="step-num">5</div>
+    <h3>Click "More Settings", switch to the "Outgoing Server" tab</h3>
+    <ul>
+        <li>Check "My outgoing server (SMTP) requires authentication"</li>
+        <li>Select "Use same settings as my incoming mail server"</li>
+    </ul>
+</div>
+
+<div class="step">
+    <div class="step-num">6</div>
+    <h3>Click "OK" to return, then click "Next" to test the configuration</h3>
+</div>
+
+<h2>Thunderbird Configuration</h2>
+
+<div class="step">
+    <div class="step-num">1</div>
+    <h3>Open Thunderbird, click "File" → "New" → "Existing Mail Account"</h3>
+</div>
+
+<div class="step">
+    <div class="step-num">2</div>
+    <h3>Enter your name, email address, and password, then click "Continue"</h3>
+</div>
+
+<div class="step">
+    <div class="step-num">3</div>
+    <h3>Thunderbird will attempt to auto-detect the configuration. If it fails, select "Manual config"</h3>
+    <table>
+    <thead>
+    <tr><th>Field</th><th>Value</th></tr>
+    </thead>
+    <tbody>
+    <tr><td>Incoming Protocol</td><td>IMAP</td></tr>
+    <tr><td>Server Hostname</td><td>EasyMail server IP</td></tr>
+    <tr><td>Port</td><td>143</td></tr>
+    <tr><td>SSL</td><td>None (or SSL/TLS with port 993)</td></tr>
+    <tr><td>Authentication</td><td>Normal password</td></tr>
+    <tr><td>Outgoing Server Hostname</td><td>Postfix server IP</td></tr>
+    <tr><td>Port</td><td>587</td></tr>
+    <tr><td>SSL</td><td>STARTTLS</td></tr>
+    <tr><td>Authentication</td><td>Normal password</td></tr>
+    </tbody>
+    </table>
+</div>
+
+<div class="step">
+    <div class="step-num">4</div>
+    <h3>Click "Done" and wait for Thunderbird to sync</h3>
+</div>
+
+<h2>Mobile Client Configuration (iOS / Android)</h2>
+
+<h3>iOS Mail</h3>
+<ul>
+    <li>Settings → Mail → Accounts → Add Account → Other</li>
+    <li>Add an IMAP account, enter your email address and password</li>
+    <li>Incoming Server: EasyMail IP, port 143, no SSL</li>
+    <li>Outgoing Server: Postfix IP, port 587, STARTTLS</li>
+    <li>Use full email address as the username</li>
+</ul>
+
+<h3>Android (Gmail App)</h3>
+<ul>
+    <li>Open Gmail → Add account → Other</li>
+    <li>Enter your email address</li>
+    <li>Select IMAP (not Personal IMAP)</li>
+    <li>Enter your password</li>
+    <li>Incoming Server: EasyMail IP, port 143, security type "None"</li>
+    <li>Outgoing Server: Postfix IP, port 587, security type "STARTTLS"</li>
+    <li>Use full email address as the username</li>
+</ul>
+
+<h2>Verifying Configuration</h2>
+
+<p>After configuration:</p>
+<ol>
+    <li>Try sending a test email to yourself</li>
+    <li>Wait a few seconds and click "Receive"</li>
+    <li>Check if the email appears in the inbox</li>
+    <li>Reply to the test email to confirm the full send/receive loop works</li>
+</ol>
+
+<div class="callout callout-warning">
+    <strong>Troubleshooting</strong> If the client configuration does not work, first check:<br>
+    - Whether EasyMail and Postfix services are running properly<br>
+    - Whether the mailbox account has been created and enabled<br>
+    - Whether the firewall allows ports 143, 587, and 25<br>
+    - Whether the full email address is used as the username<br>
+    - Check EasyMail logs and Postfix logs for detailed error information
+</div>
+
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,58 @@
+# =============================================================================
+# EasyMail systemd service unit
+# Install: cp easymail.service /etc/systemd/system/easymail.service
+# Reload: systemctl daemon-reload
+# Start:  systemctl start easymail
+# Enable: systemctl enable easymail
+# =============================================================================
+[Unit]
+Description=EasyMail - Anti-spam SMTP Milter & Mail Server
+Documentation=https://easymail.my
+After=network.target network-online.target
+Wants=network-online.target
+
+# Uncomment below when MySQL and Redis are also managed by systemd:
+# After=mysqld.service redis.service
+# Wants=mysqld.service redis.service
+
+[Service]
+Type=simple
+
+# Runtime user (must be created before deployment)
+User=easymail
+Group=easymail
+
+# Working directory
+WorkingDirectory=/opt/easymail
+
+# Startup command
+ExecStart=/opt/easymail/bin/easymail.sh start
+ExecStop=/opt/easymail/bin/easymail.sh stop
+
+# Graceful shutdown
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+# Restart policy
+Restart=on-failure
+RestartSec=5
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=65536
+
+# Hardening — NoNewPrivileges is omitted because it conflicts with AmbientCapabilities
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+
+# Allow non-root binding of privileged ports (<1024), e.g. IMAP 143
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

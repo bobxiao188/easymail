@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Installation — EasyMail Documentation</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrapper">
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <a href="index.html" class="logo">EasyMail</a>
+        <div class="logo-sub">Enterprise Mail Gateway</div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">Getting Started</div>
+        <a href="index.html">Product Overview</a>
+        <a href="setup.html" class="active">Installation</a>
+        <a href="quickstart.html">Quick Start</a>
+
+        <div class="nav-section">Admin Panel</div>
+        <a href="admin.html">Admin Panel Guide</a>
+        <a href="postfix.html">Postfix Integration</a>
+
+        <div class="nav-section">User Guide</div>
+        <a href="clients.html">Client Configuration</a>
+        <a href="webmail.html">Webmail</a>
+
+        <div class="nav-section">Filter Reference</div>
+        <a href="features.html">Built-in Feature List</a>
+
+        <div class="nav-section">Operations</div>
+        <a href="monitor.html">Service Monitoring</a>
+        <a href="faq.html">FAQ</a>
+    </nav>
+</aside>
+
+<main class="content">
+
+<h1>Installation</h1>
+
+<h2>Requirements</h2>
+
+<table>
+<thead>
+<tr><th>Dependency</th><th>Version</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td>Postfix</td><td>3.x</td><td>Edge MTA, handles SMTP inbound. Requires Milter and LMTP support.</td></tr>
+<tr><td>MySQL</td><td>8.0+</td><td>Management database, stores domains, accounts, filter rules, etc.</td></tr>
+<tr><td>Redis</td><td>6.x+</td><td>Highly recommended. Used for caching and filter sliding window statistics.</td></tr>
+<tr><td>Go</td><td>1.25+</td><td>Only needed for compilation, not required at runtime.</td></tr>
+</tbody>
+</table>
+
+<h2>Obtaining EasyMail</h2>
+
+<h3>Building from Source</h3>
+
+<pre>git clone https://github.com/your-org/easymail.git
+cd easymail
+go build -o easymail ./cmd/easymail</pre>
+
+<p>The build produces a single binary <code>easymail</code> (or <code>easymail.exe</code>) containing all built-in services and protocol adapters.</p>
+
+<h3>Configuration File</h3>
+
+<p>EasyMail uses a YAML configuration file. Create <code>easymail.yaml</code>:</p>
+
+<pre># Basic Configuration
+server_name: mail.example.com
+storage_root: /var/easymail/data
+
+# Database
+database:
+  driver: mysql
+  dsn: "root:password@tcp(127.0.0.1:3306)/easymail?charset=utf8mb4&parseTime=True&loc=Local"
+  automigrate: true
+
+# Redis (optional but recommended)
+redis:
+  addr: "127.0.0.1:6379"
+  password: ""
+  db: 0
+
+# Service Ports
+ports:
+  admin: 8000      # Admin Panel
+  webmail: 8080    # Webmail
+  imap: 143        # IMAP
+  imaps: 993       # IMAP over TLS
+  lmtp: 10027      # LMTP Delivery
+  milter: 10026    # Milter Filtering
+  dovecot: 10025   # Dovecot Auth Proxy
+
+# Admin panel static file path
+admin_static: ./frontend/admin/dist
+
+# Logging
+log_level: info    # debug / info / warn / error
+
+# Anti-Spam Module
+filter:
+  # ... see Anti-Spam Filtering section
+
+heartbeat_second: 10  # Heartbeat interval</pre>
+
+<div class="callout callout-info">
+    <strong>Tip</strong> If <code>database.automigrate: true</code> is enabled, EasyMail will automatically create all database tables on first startup.
+</div>
+
+<h2>Starting the Service</h2>
+
+<pre>./easymail -config easymail.yaml</pre>
+
+<p>After starting, EasyMail initializes the database connection, creates table structures, loads the cache, and then starts all configured services. Example log output:</p>
+
+<pre>time="2026-07-08T10:30:00+08:00" level=info msg="database connected" module=bootstrap
+time="2026-07-08T10:30:00+08:00" level=info msg="running migration" module=bootstrap
+time="2026-07-08T10:30:01+08:00" level=info msg="admin http server listening on :8000" module=admin
+time="2026-07-08T10:30:01+08:00" level=info msg="imap server listening on :143" module=imap
+time="2026-07-08T10:30:01+08:00" level=info msg="lmtp server listening on :10027" module=lmtp
+time="2026-07-08T10:30:01+08:00" level=info msg="milter server listening on :10026" module=milter
+time="2026-07-08T10:30:01+08:00" level=info msg="all services started" module=bootstrap</pre>
+
+<h2>Verifying Service Status</h2>
+
+<p>Once started, you can check the status of all services through the admin panel:</p>
+
+<p>Open your browser and visit <code>http://SERVER_IP:8000</code>. Log in for the first time using the default admin account:</p>
+
+<ul>
+    <li>Default account: <code>admin@easymail.local</code></li>
+    <li>Default password: look for the <code>admin password</code> field in the startup logs</li>
+</ul>
+
+<div class="callout callout-warning">
+    <strong>Security Notice</strong> Change the admin password immediately after the first login. For production environments, configure HTTPS (reverse proxy or direct TLS certificate configuration).
+</div>
+
+<p>After logging in, the dashboard displays the running status of all services:</p>
+
+<pre>Service Status Overview
+├── dovecot    ● running    last heartbeat 3s ago
+├── lmtp       ● running    last heartbeat 3s ago
+├── milter     ● running    last heartbeat 3s ago
+├── admin      ● running    last heartbeat 3s ago
+├── webmail    ● running    last heartbeat 3s ago
+├── imap       ● running    last heartbeat 3s ago
+└── classifier ● running    last heartbeat 3s ago</pre>
+
+<h2>Next Step</h2>
+
+<p>After completing the deployment, follow the <a href="quickstart.html">Quick Start</a> guide to configure domains, mailboxes, and Postfix integration.</p>
+
+</main>
+</div>
+</body>
+</html>

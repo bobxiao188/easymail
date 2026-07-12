@@ -1,0 +1,36 @@
+﻿/*
+ * Copyright (c) 2026 easymail.my. All rights reserved.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * For commercial licensing inquiries, please contact: 3680010825@qq.com
+ *
+ * Author: bob.xiao
+ * License: AGPLv3
+ */
+
+package milter
+
+// Message represents a command sent from milter client
+type Message struct {
+	Code byte
+	Data []byte
+}
+
+// Define milter response codes
+const (
+	rspAccept   = 'a'
+	rspContinue = 'c'
+	rspDiscard  = 'd'
+	rspReject   = 'r'
+	rspTempFail = 't'
+)
+

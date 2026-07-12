@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Postfix 集成 — EasyMail 文档</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrapper">
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <a href="index.html" class="logo">EasyMail</a>
+        <div class="logo-sub">企业邮件网关</div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">入门</div>
+        <a href="index.html">产品概述</a>
+        <a href="setup.html">安装部署</a>
+        <a href="quickstart.html">快速入门</a>
+
+        <div class="nav-section">管理后台</div>
+        <a href="admin.html">后台功能指南</a>
+        <a href="postfix.html" class="active">Postfix 集成</a>
+
+        <div class="nav-section">使用指南</div>
+        <a href="clients.html">客户端配置</a>
+        <a href="webmail.html">Webmail</a>
+
+        <div class="nav-section">过滤参考</div>
+        <a href="features.html">内置特征列表</a>
+
+        <div class="nav-section">运维</div>
+        <a href="monitor.html">服务监控</a>
+        <a href="faq.html">常见问题</a>
+    </nav>
+</aside>
+
+<main class="content">
+
+<h1>Postfix 集成</h1>
+
+<p>EasyMail 不处理 SMTP 入站，依赖 Postfix 作为边缘 MTA。Postfix 通过 Milter 协议将邮件交给 EasyMail 做反垃圾过滤，过滤后的邮件通过 LMTP 投递到 EasyMail 存储。</p>
+
+<h2>集成架构</h2>
+
+<pre>
+发送方 ──SMTP──→ Postfix (25/587)
+                      │
+                      ├── Milter (10026) ──→ EasyMail 过滤决策
+                      │                        └── accept / reject / spam / quarantine
+                      │
+                      └── LMTP (10027) ──→ EasyMail 投递
+                                             └── 写入 SQLite 索引 + 磁盘存储</pre>
+
+<h2>安装 Postfix</h2>
+
+<pre>apt install postfix
+# 安装时选择 "Internet Site"，填写域名</pre>
+
+<h2>配置 main.cf</h2>
+
+<p>编辑 <code>/etc/postfix/main.cf</code>，追加以下配置：</p>
+
+<pre># 邮件域名查询（通过 EasyMail Dovecot 协议代理）
+virtual_mailbox_domains = tcp:192.168.1.1:10025
+virtual_mailbox_maps = tcp:192.168.1.1:10025
+
+# LMTP 投递（将邮件交给 EasyMail 存储）
+virtual_transport = lmtp:inet:192.168.1.1:10027
+
+# Milter 反垃圾过滤
+smtpd_milters = inet:192.168.1.1:10026
+milter_default_action = accept
+
+# SMTP 认证（允许客户端发信）
+smtpd_sasl_type = dovecot
+smtpd_sasl_path = inet:192.168.1.1:10025
+smtpd_sasl_auth_enable = yes
+smtpd_sasl_security_options = noanonymous
+
+# 收件人限制
+smtpd_recipient_restrictions =
+    permit_mynetworks,
+    permit_sasl_authenticated,
+    reject_unauth_destination
+
+# 不依赖本地用户数据库
+local_recipient_maps =</pre>
+
+<div class="callout callout-warning">
+    <strong>重要</strong> 将 <code>192.168.1.1</code> 替换为 EasyMail 服务器的实际 IP 地址。EasyMail 的 Dovecot 协议代理同时提供三种服务：邮件域名查询、SASL 认证和 LMTP 投递。
+</div>
+
+<h3>配置详解</h3>
+
+<table>
+<thead>
+<tr><th>参数</th><th>值</th><th>作用</th></tr>
+</thead>
+<tbody>
+<tr><td><code>virtual_mailbox_domains</code></td><td><code>tcp:IP:10025</code></td><td>Postfix 通过 TCP 查询 EasyMail 确认域名是否有效</td></tr>
+<tr><td><code>virtual_mailbox_maps</code></td><td><code>tcp:IP:10025</code></td><td>Postfix 查询邮箱地址是否存在于 EasyMail</td></tr>
+<tr><td><code>virtual_transport</code></td><td><code>lmtp:inet:IP:10027</code></td><td>将邮件通过 LMTP 投递到 EasyMail</td></tr>
+<tr><td><code>smtpd_milters</code></td><td><code>inet:IP:10026</code></td><td>Milter 过滤链，EasyMail 分析邮件后返回决策</td></tr>
+<tr><td><code>smtpd_sasl_*</code></td><td>—</td><td>SMTP 认证，客户端发信时需要登录邮箱账号</td></tr>
+<tr><td><code>smtpd_recipient_restrictions</code></td><td>—</td><td>收件人限制规则，按顺序评估</td></tr>
+</tbody>
+</table>
+
+<h3>master.cf</h3>
+
+<p>默认的 <code>master.cf</code> 即可工作，无需修改。</p>
+
+<h2>验证集成</h2>
+
+<h3>1. 验证域名查询</h3>
+<pre>postmap -q example.com tcp:192.168.1.1:10025</pre>
+<p>应返回 <code>OK</code>（如果域名已添加到 EasyMail 管理后台）。</p>
+
+<h3>2. 验证邮箱查询</h3>
+<pre>postmap -q user@example.com tcp:192.168.1.1:10025</pre>
+<p>应返回 <code>OK</code>（如果邮箱已创建）。</p>
+
+<h3>3. 发送测试邮件</h3>
+<pre>echo "Hello from test" | sendmail user@example.com</pre>
+<p>查看 EasyMail 日志确认邮件已投递。</p>
+
+<h3>4. 查看 Postfix 日志</h3>
+<pre>tail -f /var/log/mail.log</pre>
+
+<h2>常见 Postfix 配置</h2>
+
+<h3>允许内部网络发信</h3>
+<pre>mynetworks = 127.0.0.0/8 192.168.0.0/16 10.0.0.0/8</pre>
+
+<h3>限制单封邮件大小</h3>
+<pre>message_size_limit = 25600000  # 25MB</pre>
+
+<h3>并发连接限制</h3>
+<pre>smtpd_client_connection_count_limit = 10
+smtpd_client_message_rate_limit = 30</pre>
+
+<h3>TLS 配置（587 STARTTLS）</h3>
+<pre>smtpd_tls_cert_file = /etc/ssl/certs/postfix.pem
+smtpd_tls_key_file = /etc/ssl/private/postfix.key
+smtpd_tls_security_level = may
+smtpd_tls_loglevel = 1</pre>
+
+<h2>Postfix Agent 远程管理</h2>
+
+<p>EasyMail 附带一个 <code>postfix-agent</code> 工具，部署在 Postfix 主机上，通过 HTTP 接口与 EasyMail 管理后台通信，实现对 Postfix 实例的远程管理。</p>
+
+<h3>工作原理</h3>
+
+<p><code>postfix-agent</code> 在 Postfix 主机上启动一个 HTTP 服务，主动向 EasyMail 管理后台发起心跳注册。Agent 使用 <code>--agent-token</code> 进行身份验证，只有持有正确 token 的 agent 才能被管理后台识别和控制。</p>
+
+<pre>
+Postfix 主机                           EasyMail 服务器
+┌──────────────────┐     HTTP/心跳     ┌────────────────────┐
+│  postfix-agent   │ ────────────────→ │  管理后台 Web      │
+│  --agent-token   │ ←──────────────── │  + API 服务        │
+│                  │   配置/命令推送    │                    │
+│  操作 postfix    │                   │  管理员 Web 操作    │
+│  (postqueue,     │                   │                    │
+│   postsuper,     │                   │                    │
+│   postfix reload)│                   │                    │
+└──────────────────┘                   └────────────────────┘</pre>
+
+<h3>部署方式</h3>
+
+<p>在 Postfix 主机上下载 EasyMail 分发的 <code>postfix-agent</code> 二进制文件，运行：</p>
+
+<pre>./postfix-agent --agent-token=your-agent-token-here</pre>
+
+<p>参数说明：</p>
+
+<table>
+<thead>
+<tr><th>参数</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>--agent-token</code></td><td>Agent 身份令牌，在管理后台生成，用于认证</td></tr>
+<tr><td><code>--easymail-addr</code></td><td>EasyMail 服务器地址（默认 <code>http://localhost:8080</code>）</td></tr>
+<tr><td><code>--listen</code></td><td>本地监听地址（默认 <code>:8081</code>，用于健康检查）</td></tr>
+</tbody>
+</table>
+
+<p>建议使用 systemd 或 supervisord 管理 agent 进程，确保开机自启。启动后可在 agent 日志中看到类似输出：</p>
+
+<pre>[INFO] Registering with EasyMail at http://192.168.1.1:8080
+[INFO] Agent registered successfully, id: agent-xxxx</pre>
+
+<h3>Admin 后台 — 添加 Postfix Agent</h3>
+
+<p>在 EasyMail 管理后台中：</p>
+
+<ol>
+<li>进入 <strong>系统设置 → Postfix Agents</strong> 页面</li>
+<li>点击 <strong>添加 Agent</strong></li>
+<li>填写 Agent 名称（如 "主 Postfix 节点"）</li>
+<li>系统生成一个 <code>agent_token</code>（如 <code>ema_xxxxxxxxxxxx</code>）</li>
+<li>将此 token 复制到 Postfix 主机的 <code>postfix-agent --agent-token=...</code> 命令中</li>
+<li>保存后，Agent 列表中会出现新条目，状态为 <span class="badge badge-warning">等待连接</span></li>
+</ol>
+
+<p>Agent 启动并成功注册后，状态变为 <span class="badge badge-success">在线</span>，并显示最后心跳时间、IP 地址等信息。</p>
+
+<h3>Admin 后台 — Postfix Config 选择应用 EasyMail Host Address</h3>
+
+<p>当 Agent 注册成功后，在 <strong>Postfix 配置管理</strong> 中，选择一个已注册的 Agent，EasyMail 会将该 Agent 标记为目标部署主机：</p>
+
+<ol>
+<li>进入 <strong>系统设置 → Postfix 配置</strong></li>
+<li>编辑或创建一条 Postfix 配置（main.cf / master.cf 片段）</li>
+<li>在 <strong>应用目标</strong> 下拉框中选择一个已注册的 Agent（显示为 "Agent 名称 - IP 地址"）</li>
+<li>系统会自动将 EasyMail 的 Host Address 注入到配置模板中，生成最终的 main.cf 配置</li>
+</ol>
+
+<p>配置模板中可以使用 <code>{{.EasyMailHost}}</code> 变量引用 EasyMail 服务器的地址：</p>
+
+<pre># 模板中的占位符会在推送时被替换为实际的 EasyMail 地址
+virtual_mailbox_domains = tcp:{{.EasyMailHost}}:10025
+virtual_mailbox_maps = tcp:{{.EasyMailHost}}:10025
+virtual_transport = lmtp:inet:{{.EasyMailHost}}:10027
+smtpd_milters = inet:{{.EasyMailHost}}:10026</pre>
+
+<h3>推送并部署配置</h3>
+
+<p>配置编辑完成后：</p>
+
+<ol>
+<li>在 Postfix 配置页面点击 <strong>部署</strong></li>
+<li>选择目标 Agent（勾选需要部署的 Postfix 主机）</li>
+<li>确认配置变更预览，系统会显示 diff（新增/修改/删除的内容）</li>
+<li>点击 <strong>确认推送</strong></li>
+</ol>
+
+<p>推送流程：</p>
+
+<pre>
+管理后台                    Agent                       Postfix
+   │                         │                           │
+   ├── 下发配置 ──────────→  │                           │
+   │                         ├── 写入 /etc/postfix/      │
+   │                         ├── 校验配置                │
+   │                         │   postfix check           │
+   │                         ├── 重载服务                │
+   │                         │   postfix reload          │
+   │                         ├── 返回结果 ──────────→    │
+   │                         │                           │
+   │  ── 显示部署结果 ──    │                           │
+   │  成功/失败 + 日志       │                           │</pre>
+
+<p>每次推送都会记录部署历史，包括操作时间、操作人、配置变更摘要和执行结果。</p>
+
+<h3>队列管理</h3>
+
+<p>通过 Agent 可以在管理后台远程查看和管理 Postfix 邮件队列：</p>
+
+<h4>查看队列状态</h4>
+
+<ol>
+<li>进入 <strong>系统设置 → Postfix Agents</strong></li>
+<li>点击目标 Agent 的 <strong>队列管理</strong> 按钮</li>
+<li>系统显示当前队列概览：</li>
+</ol>
+
+<table>
+<thead>
+<tr><th>队列类型</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td>active</td><td>正在投递中的邮件</td></tr>
+<tr><td>deferred</td><td>投递失败等待重试的邮件</td></tr>
+<tr><td>bounce</td><td>退信队列</td></tr>
+<tr><td>hold</td><td>被搁置的邮件</td></tr>
+<tr><td>incoming</td><td>正在进入的邮件</td></tr>
+</tbody>
+</table>
+
+<h4>队列操作</h4>
+
+<p>支持以下远程操作：</p>
+
+<ul>
+<li><strong>刷新队列</strong> — 立即重试所有 deferred 队列中的邮件（等价于 <code>postqueue -f</code>）</li>
+<li><strong>删除邮件</strong> — 按队列 ID 删除指定邮件（等价于 <code>postsuper -d &lt;queue_id&gt;</code>）</li>
+<li><strong>搁置/释放</strong> — 将邮件置入 hold 队列或从 hold 队列释放（等价于 <code>postsuper -h/-H &lt;queue_id&gt;</code>）</li>
+<li><strong>清空队列</strong> — 清空指定队列中的所有邮件（等价于 <code>postsuper -d ALL</code>）</li>
+</ul>
+
+<p>所有队列操作均有操作审计记录。</p>
+
+<h4>实时日志</h4>
+
+<p>队列管理页面同时展示 Agent 的实时日志输出，方便排查投递问题：</p>
+
+<pre>2026/07/12 10:23:45 [mail.log] postfix/qmgr[12345]: AABBCCDD: from=&lt;user@example.com&gt;,
+    size=12345, nrcpt=1 (queue active)
+2026/07/12 10:23:46 [mail.log] postfix/smtp[12346]: AABBCCDD: to=&lt;dest@other.com&gt;,
+    relay=mail.other.com[1.2.3.4]:25, delay=0.5, status=sent (250 2.0.0 Ok)</pre>
+
+</main>
+</div>
+</body>
+</html>

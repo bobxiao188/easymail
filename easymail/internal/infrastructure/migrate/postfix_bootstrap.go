@@ -1,0 +1,193 @@
+package migrate
+
+import (
+	"time"
+
+	"easymail/internal/domain/shared"
+	"easymail/internal/infrastructure/persistence/mysql"
+
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+)
+
+// PostfixBootstrap seeds default Postfix main.cf parameters into the database.
+// Uses upsert (ON DUPLICATE KEY UPDATE) so it is safe to run repeatedly.
+func PostfixBootstrap(db *gorm.DB) error {
+	now := time.Now()
+	defaults := []mysql.PostfixConfigPO{
+		{
+			ID:          shared.GlobalID("sys:postfix:smtpd_relay_restrictions"),
+			ParamName:   "smtpd_relay_restrictions",
+			ParamValue:  "permit_mynetworks permit_sasl_authenticated defer_unauth_destination",
+			Category:    "main",
+			IsManaged:   true,
+			Enabled:     true,
+			Description: "SMTP relay access control rules",
+			SortOrder:   1,
+			CreateTime:  now,
+			UpdateTime:  now,
+		},
+		{
+			ID:          shared.GlobalID("sys:postfix:mailbox_size_limit"),
+			ParamName:   "mailbox_size_limit",
+			ParamValue:  "102400000",
+			Category:    "main",
+			IsManaged:   false,
+			Enabled:     true,
+			Description: "Maximum mailbox size in bytes (100MB)",
+			SortOrder:   2,
+			CreateTime:  now,
+			UpdateTime:  now,
+		},
+		{
+			ID:          shared.GlobalID("sys:postfix:smtpd_sasl_type"),
+			ParamName:   "smtpd_sasl_type",
+			ParamValue:  "dovecot",
+			Category:    "main",
+			IsManaged:   true,
+			Enabled:     true,
+			Description: "SASL authentication backend type",
+			SortOrder:   4,
+			CreateTime:  now,
+			UpdateTime:  now,
+		},
+		{
+			ID:          shared.GlobalID("sys:postfix:smtpd_sasl_path"),
+			ParamName:   "smtpd_sasl_path",
+			ParamValue:  "inet:$dovecot.listen",
+			Category:    "main",
+			IsManaged:   true,
+			Enabled:     true,
+			Description: "SASL authentication socket/path (auto-resolved from dovecot.listen)",
+			SortOrder:   5,
+			CreateTime:  now,
+			UpdateTime:  now,
+		},
+		{
+			ID:          shared.GlobalID("sys:postfix:smtpd_sasl_auth_enable"),
+			ParamName:   "smtpd_sasl_auth_enable",
+			ParamValue:  "yes",
+			Category:    "main",
+			IsManaged:   true,
+			Enabled:     true,
+			Description: "Enable SMTP SASL authentication",
+			SortOrder:   6,
+			CreateTime:  now,
+			UpdateTime:  now,
+		},
+		{
+			ID:          shared.GlobalID("sys:postfix:smtpd_recipient_restrictions"),
+			ParamName:   "smtpd_recipient_restrictions",
+			ParamValue:  "permit_mynetworks, permit_sasl_authenticated, reject_unauth_destination",
+			Category:    "main",
+			IsManaged:   true,
+			Enabled:     true,
+			Description: "Recipient access control rules",
+			SortOrder:   7,
+			CreateTime:  now,
+			UpdateTime:  now,
+		},
+		{
+			ID:          shared.GlobalID("sys:postfix:smtpd_sasl_security_options"),
+			ParamName:   "smtpd_sasl_security_options",
+			ParamValue:  "noanonymous",
+			Category:    "main",
+			IsManaged:   true,
+			Enabled:     true,
+			Description: "SASL security options (no anonymous login)",
+			SortOrder:   8,
+			CreateTime:  now,
+			UpdateTime:  now,
+		},
+		{
+			ID:          shared.GlobalID("sys:postfix:smtpd_sasl_tls_security_options"),
+			ParamName:   "smtpd_sasl_tls_security_options",
+			ParamValue:  "noanonymous",
+			Category:    "main",
+			IsManaged:   true,
+			Enabled:     true,
+			Description: "SASL TLS security options (no anonymous login)",
+			SortOrder:   9,
+			CreateTime:  now,
+			UpdateTime:  now,
+		},
+		{
+			ID:          shared.GlobalID("sys:postfix:local_recipient_maps"),
+			ParamName:   "local_recipient_maps",
+			ParamValue:  "",
+			Category:    "main",
+			IsManaged:   true,
+			Enabled:     true,
+			Description: "Local recipient verification maps (empty to disable check)",
+			SortOrder:   10,
+			CreateTime:  now,
+			UpdateTime:  now,
+		},
+		{
+			ID:          shared.GlobalID("sys:postfix:virtual_mailbox_domains"),
+			ParamName:   "virtual_mailbox_domains",
+			ParamValue:  "tcp:$dovecot.listen",
+			Category:    "main",
+			IsManaged:   true,
+			Enabled:     true,
+			Description: "Virtual mailbox domain lookup (auto-resolved from dovecot.listen)",
+			SortOrder:   11,
+			CreateTime:  now,
+			UpdateTime:  now,
+		},
+		{
+			ID:          shared.GlobalID("sys:postfix:virtual_mailbox_maps"),
+			ParamName:   "virtual_mailbox_maps",
+			ParamValue:  "tcp:$dovecot.listen",
+			Category:    "main",
+			IsManaged:   true,
+			Enabled:     true,
+			Description: "Virtual mailbox lookup (auto-resolved from dovecot.listen)",
+			SortOrder:   12,
+			CreateTime:  now,
+			UpdateTime:  now,
+		},
+		{
+			ID:          shared.GlobalID("sys:postfix:smtpd_milters"),
+			ParamName:   "smtpd_milters",
+			ParamValue:  "inet:$milter.listen",
+			Category:    "main",
+			IsManaged:   true,
+			Enabled:     true,
+			Description: "SMTP milter socket (auto-resolved from milter.listen)",
+			SortOrder:   13,
+			CreateTime:  now,
+			UpdateTime:  now,
+		},
+		{
+			ID:          shared.GlobalID("sys:postfix:milter_default_action"),
+			ParamName:   "milter_default_action",
+			ParamValue:  "accept",
+			Category:    "main",
+			IsManaged:   true,
+			Enabled:     true,
+			Description: "Default milter action when milter is unavailable",
+			SortOrder:   14,
+			CreateTime:  now,
+			UpdateTime:  now,
+		},
+		{
+			ID:          shared.GlobalID("sys:postfix:virtual_transport"),
+			ParamName:   "virtual_transport",
+			ParamValue:  "lmtp:inet:$lmtp.listen",
+			Category:    "main",
+			IsManaged:   true,
+			Enabled:     true,
+			Description: "Virtual mailbox delivery transport (auto-resolved from lmtp.listen)",
+			SortOrder:   15,
+			CreateTime:  now,
+			UpdateTime:  now,
+		},
+	}
+
+	// Upsert: insert if not exists, skip if paramName already present
+	return db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "param_name"}},
+		DoNothing: true,
+	}).Create(&defaults).Error
+}

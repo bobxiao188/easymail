@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安装部署 — EasyMail 文档</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrapper">
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <a href="index.html" class="logo">EasyMail</a>
+        <div class="logo-sub">企业邮件网关</div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">入门</div>
+        <a href="index.html">产品概述</a>
+        <a href="setup.html" class="active">安装部署</a>
+        <a href="quickstart.html">快速入门</a>
+
+        <div class="nav-section">管理后台</div>
+        <a href="admin.html">后台功能指南</a>
+        <a href="postfix.html">Postfix 集成</a>
+
+        <div class="nav-section">使用指南</div>
+        <a href="clients.html">客户端配置</a>
+        <a href="webmail.html">Webmail</a>
+
+        <div class="nav-section">过滤参考</div>
+        <a href="features.html">内置特征列表</a>
+
+        <div class="nav-section">运维</div>
+        <a href="monitor.html">服务监控</a>
+        <a href="faq.html">常见问题</a>
+    </nav>
+</aside>
+
+<main class="content">
+
+<h1>安装部署</h1>
+
+<h2>环境要求</h2>
+
+<table>
+<thead>
+<tr><th>依赖</th><th>版本</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td>Postfix</td><td>3.x</td><td>边缘 MTA，处理 SMTP 入站。需要支持 Milter 和 LMTP</td></tr>
+<tr><td>MySQL</td><td>8.0+</td><td>管理数据库，存储域名、账户、过滤规则等</td></tr>
+<tr><td>Redis</td><td>6.x+</td><td>强烈推荐。用于缓存和过滤滑动窗口统计</td></tr>
+<tr><td>Go</td><td>1.25+</td><td>仅编译时需要，运行时不依赖</td></tr>
+</tbody>
+</table>
+
+<h2>获取 EasyMail</h2>
+
+<h3>从源码编译</h3>
+
+<pre>git clone https://github.com/your-org/easymail.git
+cd easymail
+go build -o easymail ./cmd/easymail</pre>
+
+<p>编译产物为单个二进制文件 <code>easymail</code>（或 <code>easymail.exe</code>），包含所有内置服务和协议适配器。</p>
+
+<h3>配置文件</h3>
+
+<p>EasyMail 使用 YAML 配置文件。创建 <code>easymail.yaml</code>：</p>
+
+<pre># 基础配置
+server_name: mail.example.com
+storage_root: /var/easymail/data
+
+# 数据库
+database:
+  driver: mysql
+  dsn: "root:password@tcp(127.0.0.1:3306)/easymail?charset=utf8mb4&parseTime=True&loc=Local"
+  automigrate: true
+
+# Redis（可选但推荐）
+redis:
+  addr: "127.0.0.1:6379"
+  password: ""
+  db: 0
+
+# 各服务端口
+ports:
+  admin: 8000      # 管理后台
+  webmail: 8080    # Webmail
+  imap: 143        # IMAP
+  imaps: 993       # IMAP over TLS
+  lmtp: 10027      # LMTP 投递
+  milter: 10026    # Milter 过滤
+  dovecot: 10025   # Dovecot 认证代理
+
+# 管理后台静态文件路径
+admin_static: ./frontend/admin/dist
+
+# 日志
+log_level: info    # debug / info / warn / error
+
+# 反垃圾模块
+filter:
+  # ... 详见反垃圾过滤章节
+
+heartbeat_second: 10  # 心跳间隔</pre>
+
+<div class="callout callout-info">
+    <strong>提示</strong> 如果启用了 <code>database.automigrate: true</code>，首次启动时 EasyMail 会自动创建所有数据库表。
+</div>
+
+<h2>启动服务</h2>
+
+<pre>./easymail -config easymail.yaml</pre>
+
+<p>启动后，EasyMail 会依次初始化数据库连接、创建表结构、加载缓存，然后启动所有配置的服务。日志输出示例：</p>
+
+<pre>time="2026-07-08T10:30:00+08:00" level=info msg="database connected" module=bootstrap
+time="2026-07-08T10:30:00+08:00" level=info msg="running migration" module=bootstrap
+time="2026-07-08T10:30:01+08:00" level=info msg="admin http server listening on :8000" module=admin
+time="2026-07-08T10:30:01+08:00" level=info msg="imap server listening on :143" module=imap
+time="2026-07-08T10:30:01+08:00" level=info msg="lmtp server listening on :10027" module=lmtp
+time="2026-07-08T10:30:01+08:00" level=info msg="milter server listening on :10026" module=milter
+time="2026-07-08T10:30:01+08:00" level=info msg="all services started" module=bootstrap</pre>
+
+<h2>验证服务状态</h2>
+
+<p>启动后，可以通过管理后台查看各服务状态：</p>
+
+<p>打开浏览器访问 <code>http://服务器IP:8000</code>。首次登录使用默认管理员账号：</p>
+
+<ul>
+    <li>初始账号：<code>admin@easymail.local</code></li>
+    <li>初始密码：在启动日志中查找 <code>admin password</code> 字段</li>
+</ul>
+
+<div class="callout callout-warning">
+    <strong>安全提醒</strong> 首次登录后请立即修改管理员密码。生产环境建议配置 HTTPS（反向代理或直接配置 TLS 证书）。
+</div>
+
+<p>登录后的控制面板会显示所有服务的运行状态：</p>
+
+<pre>服务状态概览
+├── dovecot    ● running    最后心跳 3s 前
+├── lmtp       ● running    最后心跳 3s 前
+├── milter     ● running    最后心跳 3s 前
+├── admin      ● running    最后心跳 3s 前
+├── webmail    ● running    最后心跳 3s 前
+├── imap       ● running    最后心跳 3s 前
+└── classifier ● running    最后心跳 3s 前</pre>
+
+<h2>下一步</h2>
+
+<p>完成部署后，按照 <a href="quickstart.html">快速入门</a> 配置域名、邮箱和 Postfix 集成。</p>
+
+</main>
+</div>
+</body>
+</html>

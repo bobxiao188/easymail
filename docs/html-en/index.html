@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EasyMail — Enterprise Mail Gateway Documentation</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrapper">
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <a href="index.html" class="logo">EasyMail</a>
+        <div class="logo-sub">Enterprise Mail Gateway</div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">Getting Started</div>
+        <a href="index.html" class="active">Product Overview</a>
+        <a href="setup.html">Installation</a>
+        <a href="quickstart.html">Quick Start</a>
+
+        <div class="nav-section">Admin Panel</div>
+        <a href="admin.html">Admin Panel Guide</a>
+        <a href="postfix.html">Postfix Integration</a>
+
+        <div class="nav-section">User Guide</div>
+        <a href="clients.html">Client Configuration</a>
+        <a href="webmail.html">Webmail</a>
+
+        <div class="nav-section">Filter Reference</div>
+        <a href="features.html">Built-in Feature List</a>
+
+        <div class="nav-section">Operations</div>
+        <a href="monitor.html">Service Monitoring</a>
+        <a href="faq.html">FAQ</a>
+    </nav>
+</aside>
+
+<main class="content">
+
+<div class="hero">
+    <h1>EasyMail Enterprise Mail Gateway</h1>
+    <p>Open-source, self-hosted mail security gateway. Provides anti-spam filtering, virus scanning, ML classification, and an admin panel in front of Postfix, with efficient delivery via LMTP.</p>
+</div>
+
+<h2>Core Features</h2>
+
+<div class="feature-grid">
+
+<a href="admin.html" class="feature-card">
+    <h3>Admin Panel</h3>
+    <p>Domain management, mailbox account management, filter rules, classification models, delivery logs — all operations in one web interface.</p>
+</a>
+
+<a href="postfix.html" class="feature-card">
+    <h3>Anti-Spam Filtering</h3>
+    <p>Milter protocol integration with Postfix, six-stage filter pipeline: connection analysis, HELO check, sender verification, recipient matching, header analysis, body deep inspection.</p>
+</a>
+
+<a href="quickstart.html#step3" class="feature-card">
+    <h3>ML Classification Engine</h3>
+    <p>Built-in FastText / DistilBERT classifier with ONNX Runtime inference support, customizable training samples and models.</p>
+</a>
+
+<a href="clamav.html" class="feature-card">
+    <h3>Virus Scanning</h3>
+    <p>Integrated ClamAV antivirus engine for real-time scanning of email attachments, with connection pooling and circuit breaker protection.</p>
+</a>
+
+<a href="clients.html" class="feature-card">
+    <h3>IMAP4rev1 Service</h3>
+    <p>Full IMAP protocol support, compatible with Foxmail, Outlook, Thunderbird and other mainstream clients. Supports IDLE push for real-time email delivery.</p>
+</a>
+
+<a href="webmail.html" class="feature-card">
+    <h3>Webmail</h3>
+    <p>Send and receive emails from the browser, supports multi-tab management, contacts, attachment preview, and email search.</p>
+</a>
+
+<a href="monitor.html" class="feature-card">
+    <h3>Service Monitoring</h3>
+    <p>Heartbeat mechanism automatically detects service status, control panel visualizes mail traffic, top senders, and system health.</p>
+</a>
+
+<a href="quickstart.html" class="feature-card">
+    <h3>Quick Start</h3>
+    <p>From deployment to first email delivery in about 30 minutes. Clear workflow guidance: domain → mailbox → Postfix → verification.</p>
+</a>
+
+</div>
+
+<h2>System Architecture</h2>
+
+<p>EasyMail does not handle SMTP inbound; it relies on Postfix as the edge MTA. The overall architecture is as follows:</p>
+
+<pre>
+External Mail ──→ Postfix (SMTP)
+                │
+                ├── Milter (10026) ──→ Anti-Spam Filter Pipeline
+                │                        ├── Connection / HELO / Sender / Recipient Checks
+                │                        ├── Header / Body Deep Analysis
+                │                        ├── ML Classification Model Inference
+                │                        └── ClamAV Virus Scanning
+                │
+                └── LMTP (10027) ──→ EasyMail Storage
+                                        ├── MySQL (Management Data)
+                                        ├── Redis (Cache + Statistics)
+                                        ├── SQLite (Per-User Mail Index)
+                                        └── Disk (Raw .eml Files)
+                                        │
+                                        ├── IMAP (143/993)    ← Client Mail Retrieval
+                                        ├── Webmail (8080)    ← Browser Access
+                                        └── Dovecot (10025)   ← Postfix SASL Auth</pre>
+
+<h2>Component Overview</h2>
+
+<table>
+<thead>
+<tr><th>Component</th><th>Protocol / Port</th><th>Function</th></tr>
+</thead>
+<tbody>
+<tr><td>Milter</td><td>TCP 10026</td><td>Anti-spam filter pipeline interfacing with Postfix</td></tr>
+<tr><td>LMTP</td><td>TCP 10027</td><td>Receives mail delivered by Postfix, parses MIME, writes index and disk storage</td></tr>
+<tr><td>IMAP</td><td>143 / 993</td><td>Email client send/receive access</td></tr>
+<tr><td>Admin API</td><td>8000</td><td>Admin panel HTTP API + static SPA</td></tr>
+<tr><td>Webmail API</td><td>8080</td><td>Browser Webmail HTTP API + static SPA</td></tr>
+<tr><td>Dovecot</td><td>10025</td><td>Postfix SASL authentication proxy (not actual Dovecot)</td></tr>
+<tr><td>Classifier</td><td>gRPC</td><td>ML classification inference service</td></tr>
+</tbody>
+</table>
+
+<h2>Storage Model</h2>
+
+<table>
+<thead>
+<tr><th>Storage</th><th>Purpose</th><th>Required</th></tr>
+</thead>
+<tbody>
+<tr><td>MySQL</td><td>Domains, mailbox accounts, filter rules, classification models, admin accounts, delivery logs</td><td>Yes</td></tr>
+<tr><td>Redis</td><td>Cache domain/user/admin records, filter sliding window statistics</td><td>Recommended</td></tr>
+<tr><td>Disk</td><td>Raw email .eml files (stored by domain/user/shard)</td><td>Yes</td></tr>
+<tr><td>SQLite</td><td>Per-user mail index (path: storage_dir/domain/user/user.db)</td><td>Automatic</td></tr>
+</tbody>
+</table>
+
+<h2>Next Steps</h2>
+
+<ul>
+    <li><a href="setup.html">View Installation Guide</a> — environment setup, configuration file, starting services</li>
+    <li><a href="quickstart.html">Quick Start</a> — 30 minutes from deployment to sending and receiving mail</li>
+    <li><a href="admin.html">Admin Panel Guide</a> — domain, mailbox, filter rule configuration</li>
+    <li><a href="postfix.html">Postfix Integration</a> — detailed Postfix configuration</li>
+</ul>
+
+</main>
+</div>
+</body>
+</html>

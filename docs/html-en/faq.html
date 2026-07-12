@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAQ — EasyMail Documentation</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrapper">
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <a href="index.html" class="logo">EasyMail</a>
+        <div class="logo-sub">Enterprise Mail Gateway</div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">Getting Started</div>
+        <a href="index.html">Product Overview</a>
+        <a href="setup.html">Installation & Deployment</a>
+        <a href="quickstart.html">Quick Start</a>
+
+        <div class="nav-section">Admin Panel</div>
+        <a href="admin.html">Admin Panel Guide</a>
+        <a href="postfix.html">Postfix Integration</a>
+
+        <div class="nav-section">User Guide</div>
+        <a href="clients.html">Client Configuration</a>
+        <a href="webmail.html">Webmail</a>
+
+        <div class="nav-section">Filter Reference</div>
+        <a href="features.html">Built-in Feature List</a>
+
+        <div class="nav-section">Operations</div>
+        <a href="monitor.html">Service Monitoring</a>
+        <a href="faq.html" class="active">FAQ</a>
+    </nav>
+</aside>
+
+<main class="content">
+
+<h1>FAQ</h1>
+
+<style>
+.faq-item { margin: 0 0 4px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.faq-q { padding: 14px 18px; background: #f8f9fa; cursor: default; font-weight: 600; font-size: 15px; color: var(--primary-dark); }
+.faq-q::before { content: "Q. "; color: var(--accent); }
+.faq-a { padding: 14px 18px; background: #fff; border-top: 1px solid var(--border); font-size: 14px; line-height: 1.7; }
+.faq-a p { margin: 0 0 10px; }
+.faq-a ul { margin: 0 0 10px 16px; }
+.faq-a pre { margin: 0 0 10px; }
+</style>
+
+<div class="faq-item">
+    <div class="faq-q">Cannot log in to the admin panel</div>
+    <div class="faq-a">
+        <p><strong>Possible causes and solutions:</strong></p>
+        <ul>
+            <li>Service not started: Verify the EasyMail process is running and there are no errors in the logs</li>
+            <li>Port not open: Check if the firewall allows traffic on port 8000</li>
+            <li>Default admin password: Find the <code>admin password</code> field in the startup logs to get the initial password</li>
+            <li>If you forgot the password, you can reset the admin password directly through the database</li>
+        </ul>
+    </div>
+</div>
+
+<div class="faq-item">
+    <div class="faq-q">Client IMAP connection fails</div>
+    <div class="faq-a">
+        <p><strong>Troubleshoot in the following order:</strong></p>
+        <ul>
+            <li>Confirm the IMAP service is running (check the dashboard service status or EasyMail logs)</li>
+            <li>Confirm the mailbox account has been created and its status is "enabled"</li>
+            <li>Confirm you are using the full email address as the username (e.g. <code>user@example.com</code>, not just <code>user</code>)</li>
+            <li>Confirm the firewall allows port 143 (and port 993 if using SSL)</li>
+            <li>Check EasyMail logs for IMAP connection failure error messages</li>
+            <li>Test locally on the server using telnet: <code>telnet 127.0.0.1 143</code> to see if a connection can be established</li>
+        </ul>
+        <div class="callout callout-info">
+            <strong>Note</strong> EasyMail's IMAP supports AUTHENTICATE PLAIN and LOGIN authentication methods. If the client is configured for secure authentication (e.g. CRAM-MD5), switch to plain password authentication.
+        </div>
+    </div>
+</div>
+
+<div class="faq-item">
+    <div class="faq-q">Email sending fails (SMTP rejected)</div>
+    <div class="faq-a">
+        <p><strong>Possible causes:</strong></p>
+        <ul>
+            <li>Postfix is not properly configured or not running</li>
+            <li>SMTP authentication fails: Verify the username (full email address) and password are correct</li>
+            <li>The sender's domain has not been added to EasyMail</li>
+            <li>Postfix's <code>smtpd_recipient_restrictions</code> is rejecting the connection</li>
+            <li>Email was rejected by Milter filtering (check the delivery logs for filtering results)</li>
+            <li>Port blocked: Port 25 is often blocked by ISPs; it is recommended to use port 587</li>
+        </ul>
+        <p><strong>Troubleshooting:</strong> Check Postfix logs at <code>/var/log/mail.log</code> and the Milter decision in EasyMail logs.</p>
+    </div>
+</div>
+
+<div class="faq-item">
+    <div class="faq-q">Cannot receive incoming external emails</div>
+    <div class="faq-a">
+        <p><strong>Troubleshooting chain:</strong></p>
+        <ul>
+            <li>Check if the DNS MX record points correctly to the Postfix server</li>
+            <li>Confirm from Postfix logs that external senders are successfully connecting to the server</li>
+            <li>Check EasyMail delivery logs to see if the email was intercepted by filtering rules (spam / quarantine / reject)</li>
+            <li>Check the Spam and Quarantine folders for any misclassified emails</li>
+            <li>Check if there is sufficient disk storage space</li>
+            <li>Confirm the mailbox capacity has not been exceeded</li>
+        </ul>
+    </div>
+</div>
+
+<div class="faq-item">
+    <div class="faq-q">Foxmail / Outlook client disconnects immediately after connecting</div>
+    <div class="faq-a">
+        <p>This is usually an IMAP protocol compatibility issue. Please check:</p>
+        <ul>
+            <li>Whether EasyMail is up to date (compatibility issues may have been fixed in later versions)</li>
+            <li>Check EasyMail logs for the specific error message regarding the IMAP disconnection</li>
+            <li>IMAP response format must strictly follow RFC 3501 specifications; some clients are sensitive to formatting</li>
+            <li>Do not use <code>BODY.PEEK</code> as a data item name in FETCH responses; use <code>BODY</code> instead</li>
+            <li>Verify that the RECENT response value is not 0 (if emails already exist)</li>
+        </ul>
+    </div>
+</div>
+
+<div class="faq-item">
+    <div class="faq-q">Milter filtering causes false positives on legitimate emails</div>
+    <div class="faq-a">
+        <p><strong>Solutions:</strong></p>
+        <ul>
+            <li>Adjust the priority or threshold of rules on the "Filter Rules" page</li>
+            <li>Move misclassified emails from the spam folder back to the inbox; the system will learn from this</li>
+            <li>Add the sender to the whitelist (via custom rules)</li>
+            <li>Adjust the threshold of the ML classification model</li>
+            <li>Collect false positive samples to retrain the classification model</li>
+            <li>Temporarily disable the rule causing false positives to identify the problematic rule</li>
+        </ul>
+    </div>
+</div>
+
+<div class="faq-item">
+    <div class="faq-q">How to back up and restore email data</div>
+    <div class="faq-a">
+        <p>EasyMail's email data consists of three parts:</p>
+        <ul>
+            <li><strong>MySQL Database</strong>: domains, accounts, filter rules, classification models, and other management data<br>
+                Backup method: <code>mysqldump -u root -p easymail &gt; easymail_backup.sql</code></li>
+            <li><strong>Disk Storage</strong>: raw .eml files (located under the configured <code>storage_root</code> directory)<br>
+                Backup method: directly copy the directory, e.g. <code>rsync -av /var/easymail/data/ /backup/</code></li>
+            <li><strong>Redis Data</strong>: cache and statistics (non-essential, can be automatically rebuilt if lost)</li>
+        </ul>
+        <p><strong>Restore procedure:</strong> First restore the MySQL data, then restore the disk files, and finally start EasyMail. Redis data will be rebuilt automatically.</p>
+    </div>
+</div>
+
+<div class="faq-item">
+    <div class="faq-q">How to upgrade EasyMail</div>
+    <div class="faq-a">
+        <pre># Pull the latest code
+git pull
+
+# Rebuild
+go build -o easymail ./cmd/easymail
+
+# Back up the current binary
+cp /usr/local/bin/easymail /usr/local/bin/easymail.bak
+
+# Replace the binary
+cp easymail /usr/local/bin/easymail
+
+# Restart the service
+systemctl restart easymail</pre>
+        <div class="callout callout-warning">
+            <strong>Note</strong> It is recommended to back up MySQL and the storage directory before upgrading. The <code>database.automigrate: true</code> config setting will automatically apply database schema changes on startup.
+        </div>
+    </div>
+</div>
+
+<div class="faq-item">
+    <div class="faq-q">How to view system logs</div>
+    <div class="faq-a">
+        <p>EasyMail outputs logs to stdout by default. If using systemd:</p>
+        <pre>journalctl -u easymail -f</pre>
+        <p>Log level is configured in <code>easymail.yaml</code>:</p>
+        <ul>
+            <li><code>debug</code>: detailed debugging information (use when troubleshooting)</li>
+            <li><code>info</code>: general runtime information (default)</li>
+            <li><code>warn</code>: warnings and errors only</li>
+            <li><code>error</code>: errors only</li>
+        </ul>
+        <p>Log format example:</p>
+        <pre>time="2026-07-08T10:30:00+08:00" level=info msg="imap: connection from 192.168.1.100:54321" module=imap
+time="2026-07-08T10:30:01+08:00" level=info msg="lmtp: delivered mail to user@example.com" module=lmtp
+time="2026-07-08T10:30:02+08:00" level=debug msg="[IMAP-DEBUG] C: C1 LOGIN user@example.com ***" module=imap</pre>
+    </div>
+</div>
+
+<div class="faq-item">
+    <div class="faq-q">How to configure HTTPS</div>
+    <div class="faq-a">
+        <p>EasyMail's admin panel and Webmail use plain HTTP by default. It is recommended to configure HTTPS in production:</p>
+        <p><strong>Option 1 (Recommended)</strong>: Use a reverse proxy (Nginx / Caddy)</p>
+        <pre># Nginx configuration example
+server {
+    listen 443 ssl;
+    server_name admin.example.com;
+
+    ssl_certificate /etc/ssl/certs/example.com.pem;
+    ssl_certificate_key /etc/ssl/private/example.com.key;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}</pre>
+        <p><strong>Option 2</strong>: Support TLS at the application level (requires implementing certificate loading configuration yourself).</p>
+    </div>
+</div>
+
+<div class="faq-item">
+    <div class="faq-q">Which databases does EasyMail support?</div>
+    <div class="faq-a">
+        <p>Via the GORM ORM, it supports:</p>
+        <ul>
+            <li><strong>MySQL</strong> 8.0+ (default, recommended)</li>
+            <li><strong>PostgreSQL</strong> (change the driver type in the configuration file)</li>
+            <li><strong>SQLite3</strong> (testing only, not recommended for production)</li>
+        </ul>
+        <p>Modify in the configuration file:</p>
+        <pre>database:
+  driver: mysql       # options: mysql / postgres / sqlite
+  dsn: "..."</pre>
+    </div>
+</div>
+
+</main>
+</div>
+</body>
+</html>

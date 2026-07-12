@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Monitoring — EasyMail Documentation</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrapper">
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <a href="index.html" class="logo">EasyMail</a>
+        <div class="logo-sub">Enterprise Mail Gateway</div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">Getting Started</div>
+        <a href="index.html">Product Overview</a>
+        <a href="setup.html">Installation & Deployment</a>
+        <a href="quickstart.html">Quick Start</a>
+
+        <div class="nav-section">Admin Panel</div>
+        <a href="admin.html">Admin Panel Guide</a>
+        <a href="postfix.html">Postfix Integration</a>
+
+        <div class="nav-section">User Guide</div>
+        <a href="clients.html">Client Configuration</a>
+        <a href="webmail.html">Webmail</a>
+
+        <div class="nav-section">Filter Reference</div>
+        <a href="features.html">Built-in Feature List</a>
+
+        <div class="nav-section">Operations</div>
+        <a href="monitor.html" class="active">Service Monitoring</a>
+        <a href="faq.html">FAQ</a>
+    </nav>
+</aside>
+
+<main class="content">
+
+<h1>Service Monitoring</h1>
+
+<p>EasyMail uses a heartbeat mechanism to monitor the running status of each service component. Each enabled service periodically writes a heartbeat timestamp to Redis, and the admin panel reads the heartbeat records from Redis to determine the health status of each service.</p>
+
+<h2>Heartbeat Mechanism</h2>
+
+<p>The heartbeat mechanism workflow:</p>
+
+<pre>
+Startup
+  │
+  ├── Create global ServiceManager
+  ├── Register each service (Dovecot, LMTP, Milter, Admin, Webmail, IMAP, Classifier)
+  │     └── Each service has its own heartbeat interval (defaults to global config)
+  └── Start heartbeat manager
+        │
+        Every 10 seconds (configurable):
+        ├── Iterate through all registered services
+        ├── Write current timestamp to Redis
+        │     └── key:  easymail:service:{service_name}:heartbeat
+        │         value: ISO8601 timestamp
+        └── Advance to next cycle</pre>
+
+<p>Heartbeat configuration in <code>easymail.yaml</code>:</p>
+
+<pre># Global heartbeat config
+heartbeat_second: 10  # Heartbeat interval (seconds), set to 0 or when Redis is unavailable to auto-disable
+
+# Individual service config (automatically inherits global heartbeat settings)
+imap:
+  enable: true
+
+milter:
+  enable: true</pre>
+
+<div class="callout callout-info">
+    <strong>Note</strong> Heartbeat is automatically enabled (when <code>heartbeat_second &gt; 0</code> and Redis is available), no need to configure per service.
+</div>
+
+<h2>Admin Dashboard</h2>
+
+<p>After logging into the admin panel, the dashboard shows the running status of each service:</p>
+
+<table>
+<thead>
+<tr><th>Status</th><th>Criteria</th><th>Indicator</th></tr>
+</thead>
+<tbody>
+<tr><td>running</td><td>Last heartbeat &lt; 30 seconds</td><td>Green</td></tr>
+<tr><td>warning</td><td>Last heartbeat 30-120 seconds</td><td>Yellow</td></tr>
+<tr><td>stopped</td><td>Last heartbeat &gt; 120 seconds or no heartbeat record</td><td>Red</td></tr>
+</tbody>
+</table>
+
+<p>The dashboard also displays:</p>
+<ul>
+    <li><strong>Today's Mail Statistics</strong>: total received, filtered, rejected, spam count</li>
+    <li><strong>Top Senders</strong>: today's TOP10 senders by volume</li>
+    <li><strong>Service Status</strong>: overview of all services</li>
+</ul>
+
+<h2>CLI Heartbeat Tool</h2>
+
+<p>EasyMail includes the <code>heartbeat-cli</code> command-line tool to quickly view the heartbeat status of all services:</p>
+
+<pre>cd cmd/heartbeat-cli
+go run main.go -config /path/to/easymail.yaml</pre>
+
+<p>Sample output:</p>
+
+<pre>Service      Last Heartbeat          Age          Status
+----------------------------------------------------------------------
+dovecot      2026-07-08T10:30:45Z    3s           running
+lmtp         2026-07-08T10:30:45Z    3s           running
+milter       2026-07-08T10:30:45Z    3s           running
+admin        2026-07-08T10:30:45Z    3s           running
+webmail      2026-07-08T10:30:45Z    3s           running
+imap         2026-07-08T10:30:45Z    3s           running
+classifier   2026-07-08T10:30:45Z    3s           running</pre>
+
+<h2>API Query</h2>
+
+<p>The admin panel's <code>GET /api/v1/dashboard/services</code> endpoint returns service status JSON, suitable for integration with external monitoring systems:</p>
+
+<pre>GET /api/v1/dashboard/services
+Authorization: Bearer {token}
+
+Response:
+{
+  "code": 0,
+  "data": {
+    "dovecot": { "status": "running", "lastHeartbeat": "2026-07-08T10:30:45Z" },
+    "lmtp":    { "status": "running", "lastHeartbeat": "2026-07-08T10:30:45Z" },
+    "milter":  { "status": "running", "lastHeartbeat": "2026-07-08T10:30:45Z" },
+    "admin":   { "status": "running", "lastHeartbeat": "2026-07-08T10:30:45Z" },
+    "webmail": { "status": "running", "lastHeartbeat": "2026-07-08T10:30:45Z" },
+    "imap":    { "status": "running", "lastHeartbeat": "2026-07-08T10:30:45Z" }
+  }
+}</pre>
+
+<h2>Direct Redis Query</h2>
+
+<p>If you need to manually or via script check heartbeat status:</p>
+
+<pre># List all registered services
+redis-cli keys "easymail.service:*"
+
+# View a specific service's heartbeat
+redis-cli get "easymail.service:imap:heartbeat"
+
+# Sample output
+# "2026-07-08T10:30:45Z"</pre>
+
+<h2>Mail Statistics</h2>
+
+<p>The admin panel API also provides mail traffic statistics:</p>
+
+<ul>
+    <li><strong>GET /api/v1/dashboard/stats</strong>: Returns today's mail statistics (total, filtered, rejected, spam counts)</li>
+    <li><strong>GET /api/v1/dashboard/top-senders</strong>: Returns today's TOP10 senders by volume</li>
+</ul>
+
+<p>These statistics are computed in real-time via Redis counters, without database queries, for fast response.</p>
+
+</main>
+</div>
+</body>
+</html>

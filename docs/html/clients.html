@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客户端配置 — EasyMail 文档</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrapper">
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <a href="index.html" class="logo">EasyMail</a>
+        <div class="logo-sub">企业邮件网关</div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">入门</div>
+        <a href="index.html">产品概述</a>
+        <a href="setup.html">安装部署</a>
+        <a href="quickstart.html">快速入门</a>
+
+        <div class="nav-section">管理后台</div>
+        <a href="admin.html">后台功能指南</a>
+        <a href="postfix.html">Postfix 集成</a>
+
+        <div class="nav-section">使用指南</div>
+        <a href="clients.html" class="active">客户端配置</a>
+        <a href="webmail.html">Webmail</a>
+
+        <div class="nav-section">过滤参考</div>
+        <a href="features.html">内置特征列表</a>
+
+        <div class="nav-section">运维</div>
+        <a href="monitor.html">服务监控</a>
+        <a href="faq.html">常见问题</a>
+    </nav>
+</aside>
+
+<main class="content">
+
+<h1>邮件客户端配置</h1>
+
+<p>EasyMail 提供完整的 IMAP4rev1 服务，兼容主流邮件客户端。以下为各客户端的配置参数。</p>
+
+<h2>通用配置参数</h2>
+
+<table>
+<thead>
+<tr><th>参数</th><th>值</th></tr>
+</thead>
+<tbody>
+<tr><td>IMAP 服务器</td><td>你的 EasyMail 服务器 IP 或域名</td></tr>
+<tr><td>IMAP 端口</td><td>143（明文）或 993（SSL/TLS）</td></tr>
+<tr><td>SMTP 服务器</td><td>你的 Postfix 服务器 IP 或域名</td></tr>
+<tr><td>SMTP 端口</td><td>587（STARTTLS）或 25（明文）</td></tr>
+<tr><td>用户名</td><td>完整的邮箱地址，如 <code>user@example.com</code></td></tr>
+<tr><td>密码</td><td>创建邮箱时设置的密码</td></tr>
+<tr><td>认证方式</td><td>普通密码（PLAIN / LOGIN）</td></tr>
+</tbody>
+</table>
+
+<div class="callout callout-info">
+    <strong>注意</strong> SMTP 端口 25 通常被 ISP 封锁，建议客户端使用 587 端口发送邮件。如果 IMAP 使用 993（SSL），SMTP 也建议使用 465 或 587 加密。
+</div>
+
+<h2>Foxmail 配置</h2>
+
+<div class="step">
+    <div class="step-num">1</div>
+    <h3>打开 Foxmail，点击 "工具" → "账号管理" → "新建"</h3>
+</div>
+
+<div class="step">
+    <div class="step-num">2</div>
+    <h3>输入邮箱地址和密码，点击"手动设置"</h3>
+</div>
+
+<div class="step">
+    <div class="step-num">3</div>
+    <h3>填写服务器信息</h3>
+    <table>
+    <thead>
+    <tr><th>字段</th><th>值</th></tr>
+    </thead>
+    <tbody>
+    <tr><td>接收服务器类型</td><td>IMAP</td></tr>
+    <tr><td>接收服务器</td><td>你的 EasyMail 服务器 IP</td></tr>
+    <tr><td>接收端口</td><td>143</td></tr>
+    <tr><td>SSL</td><td>不勾选（或勾选 993 端口）</td></tr>
+    <tr><td>发送服务器</td><td>你的 Postfix 服务器 IP</td></tr>
+    <tr><td>发送端口</td><td>587</td></tr>
+    <tr><td>发送服务器需要验证</td><td>勾选</td></tr>
+    </tbody>
+    </table>
+</div>
+
+<div class="step">
+    <div class="step-num">4</div>
+    <h3>点击"测试"，确认连接成功后保存</h3>
+</div>
+
+<h2>Outlook 配置</h2>
+
+<div class="step">
+    <div class="step-num">1</div>
+    <h3>打开 Outlook，点击 "文件" → "添加账户"</h3>
+</div>
+
+<div class="step">
+    <div class="step-num">2</div>
+    <h3>选择"手动设置或其他服务器类型"，点击"下一步"</h3>
+</div>
+
+<div class="step">
+    <div class="step-num">3</div>
+    <h3>选择"POP 或 IMAP"，点击"下一步"</h3>
+</div>
+
+<div class="step">
+    <div class="step-num">4</div>
+    <h3>填写账户信息</h3>
+    <table>
+    <thead>
+    <tr><th>字段</th><th>值</th></tr>
+    </thead>
+    <tbody>
+    <tr><td>您的姓名</td><td>显示名称</td></tr>
+    <tr><td>电子邮件地址</td><td><code>user@example.com</code></td></tr>
+    <tr><td>账户类型</td><td>IMAP</td></tr>
+    <tr><td>接收邮件服务器</td><td>EasyMail 服务器 IP</td></tr>
+    <tr><td>发送邮件服务器</td><td>Postfix 服务器 IP</td></tr>
+    <tr><td>用户名</td><td><code>user@example.com</code>（完整邮箱地址）</td></tr>
+    <tr><td>密码</td><td>邮箱密码</td></tr>
+    </tbody>
+    </table>
+</div>
+
+<div class="step">
+    <div class="step-num">5</div>
+    <h3>点击"其他设置"，切换到"发送服务器"选项卡</h3>
+    <ul>
+        <li>勾选"我的发送服务器(SMTP)要求验证"</li>
+        <li>选择"使用与接收邮件服务器相同的设置"</li>
+    </ul>
+</div>
+
+<div class="step">
+    <div class="step-num">6</div>
+    <h3>点击"确定"返回，点击"下一步"测试配置</h3>
+</div>
+
+<h2>Thunderbird 配置</h2>
+
+<div class="step">
+    <div class="step-num">1</div>
+    <h3>打开 Thunderbird，点击 "文件" → "新建" → "现有邮件账户"</h3>
+</div>
+
+<div class="step">
+    <div class="step-num">2</div>
+    <h3>输入名称、邮箱地址和密码，点击"继续"</h3>
+</div>
+
+<div class="step">
+    <div class="step-num">3</div>
+    <h3>Thunderbird 会自动尝试查找配置。如果失败，选择"手动配置"</h3>
+    <table>
+    <thead>
+    <tr><th>字段</th><th>值</th></tr>
+    </thead>
+    <tbody>
+    <tr><td>收件协议</td><td>IMAP</td></tr>
+    <tr><td>服务器主机名</td><td>EasyMail 服务器 IP</td></tr>
+    <tr><td>端口</td><td>143</td></tr>
+    <tr><td>SSL</td><td>无（或 SSL/TLS 配合端口 993）</td></tr>
+    <tr><td>认证</td><td>普通密码</td></tr>
+    <tr><td>发件服务器主机名</td><td>Postfix 服务器 IP</td></tr>
+    <tr><td>端口</td><td>587</td></tr>
+    <tr><td>SSL</td><td>STARTTLS</td></tr>
+    <tr><td>认证</td><td>普通密码</td></tr>
+    </tbody>
+    </table>
+</div>
+
+<div class="step">
+    <div class="step-num">4</div>
+    <h3>点击"完成"，等待 Thunderbird 同步</h3>
+</div>
+
+<h2>手机客户端配置（iOS / Android）</h2>
+
+<h3>iOS 邮件</h3>
+<ul>
+    <li>设置 → 邮件 → 账户 → 添加账户 → 其他</li>
+    <li>添加 IMAP 账户，填写邮箱地址、密码</li>
+    <li>收件服务器：EasyMail IP，端口 143，无 SSL</li>
+    <li>发件服务器：Postfix IP，端口 587，STARTTLS</li>
+    <li>用户名使用完整邮箱地址</li>
+</ul>
+
+<h3>Android（Gmail 客户端）</h3>
+<ul>
+    <li>打开 Gmail → 添加账户 → 其他</li>
+    <li>输入邮箱地址</li>
+    <li>选择 IMAP（不是个人 IMAP）</li>
+    <li>输入密码</li>
+    <li>收件服务器：EasyMail IP，端口 143，安全类型"无"</li>
+    <li>发件服务器：Postfix IP，端口 587，安全类型"STARTTLS"</li>
+    <li>用户名使用完整邮箱地址</li>
+</ul>
+
+<h2>验证配置</h2>
+
+<p>配置完成后：</p>
+<ol>
+    <li>尝试发送一封测试邮件给自己</li>
+    <li>稍等几秒后点击"接收"</li>
+    <li>检查收件箱是否收到邮件</li>
+    <li>回复测试邮件确认收发链路完整</li>
+</ol>
+
+<div class="callout callout-warning">
+    <strong>常见问题</strong> 客户端配置不通过时，首先检查：<br>
+    - EasyMail 和 Postfix 服务是否正常运行<br>
+    - 邮箱账户是否已经创建并启用<br>
+    - 防火墙是否放行了 143、587、25 端口<br>
+    - 是否使用了完整的邮箱地址作为用户名<br>
+    - 查看 EasyMail 日志和 Postfix 日志获取详细错误信息
+</div>
+
+</main>
+</div>
+</body>
+</html>

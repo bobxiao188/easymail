@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Start — EasyMail Documentation</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrapper">
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <a href="index.html" class="logo">EasyMail</a>
+        <div class="logo-sub">Enterprise Mail Gateway</div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">Getting Started</div>
+        <a href="index.html">Product Overview</a>
+        <a href="setup.html">Installation & Deployment</a>
+        <a href="quickstart.html" class="active">Quick Start</a>
+
+        <div class="nav-section">Admin Panel</div>
+        <a href="admin.html">Admin Panel Guide</a>
+        <a href="postfix.html">Postfix Integration</a>
+
+        <div class="nav-section">User Guide</div>
+        <a href="clients.html">Client Configuration</a>
+        <a href="webmail.html">Webmail</a>
+
+        <div class="nav-section">Filter Reference</div>
+        <a href="features.html">Built-in Features</a>
+
+        <div class="nav-section">Operations</div>
+        <a href="monitor.html">Service Monitoring</a>
+        <a href="faq.html">FAQ</a>
+    </nav>
+</aside>
+
+<main class="content">
+
+<h1>Quick Start</h1>
+
+<p>This guide walks you through the complete process from deployment to successfully sending and receiving emails. If you have already completed the installation and deployment, you can start directly from Step 1.</p>
+
+<h2>Workflow Diagram</h2>
+
+<pre>
+Admin Panel (8000)                    Postfix Server
+    │                                 │
+    ├─ 1. Add Mail Domain ────────────┤
+    ├─ 2. Create Mailbox ─────────────┤
+    ├─ 3. Configure Postfix main.cf ──┤
+    └─ 4. Verify Mail Delivery ───────┴─→ 5. Configure Mail Client
+</pre>
+
+<div class="step">
+    <div class="step-num">1</div>
+    <h3>Add a Mail Domain</h3>
+    <p>Log in to the admin panel at <code>http://ServerIP:8000</code> and navigate to the <strong>Domain Management</strong> page.</p>
+    <p>Click "Add Domain" and fill in the following information:</p>
+    <ul>
+        <li><strong>Domain</strong>: Your mail domain, e.g. <code>example.com</code></li>
+        <li><strong>Description</strong>: Optional notes</li>
+    </ul>
+    <p>After adding successfully, a new entry will appear in the domain list. The domain status will be "Enabled". You need to configure MX records for this domain to point mail to your Postfix server:</p>
+    <pre>example.com.  IN  MX  10  mail.example.com.
+mail.example.com.  IN  A   Your Server Public IP</pre>
+    <div class="callout callout-info">
+        <strong>Tip</strong> If this is just for internal testing, you can skip DNS configuration and simply allow internal sending IPs in Postfix's <code>mynetworks</code>.
+    </div>
+</div>
+
+<div class="step">
+    <div class="step-num">2</div>
+    <h3>Create a Mailbox</h3>
+    <p>Go to the <strong>Mailbox Management</strong> page (or click the "Mailboxes" tab in the domain details).</p>
+    <p>Click "Add Mailbox" and fill in:</p>
+    <ul>
+        <li><strong>Email Address</strong>: e.g. <code>user@example.com</code></li>
+        <li><strong>Password</strong>: Set the login password</li>
+        <li><strong>Domain</strong>: Select the domain added in the previous step</li>
+        <li><strong>Mailbox Capacity</strong>: Limit the disk space for the mailbox</li>
+    </ul>
+    <p>After creation, the mailbox can be used for IMAP login and receiving mail.</p>
+    <div class="callout callout-success">
+        <strong>Note</strong> After creating a mailbox, the system will automatically create the user's folder structure (Inbox, Sent, Spam, Trash, etc.) in the storage directory.
+    </div>
+</div>
+
+<div class="step">
+    <div class="step-num">3</div>
+    <h3>Configure Postfix</h3>
+    <p>Edit <code>/etc/postfix/main.cf</code> on the Postfix server:</p>
+    <pre># Mail domain list (synced from EasyMail admin panel)
+virtual_mailbox_domains = tcp:192.168.1.1:10025
+virtual_mailbox_maps = tcp:192.168.1.1:10025
+
+# LMTP delivery to EasyMail
+virtual_transport = lmtp:inet:192.168.1.1:10027
+
+# Milter anti-spam filtering
+smtpd_milters = inet:192.168.1.1:10026
+milter_default_action = accept
+
+# SMTP authentication (via EasyMail's Dovecot protocol proxy)
+smtpd_sasl_type = dovecot
+smtpd_sasl_path = inet:192.168.1.1:10025
+smtpd_sasl_auth_enable = yes
+smtpd_recipient_restrictions =
+    permit_mynetworks,
+    permit_sasl_authenticated,
+    reject_unauth_destination
+smtpd_sasl_security_options = noanonymous
+local_recipient_maps =</pre>
+    <p>Replace <code>192.168.1.1</code> with the actual IP address of your EasyMail server.</p>
+    <p>After modification, restart Postfix:</p>
+    <pre>systemctl restart postfix</pre>
+    <div class="callout callout-warning">
+        <strong>Note</strong> EasyMail's Dovecot authentication proxy listens on TCP port 10025 and provides both domain lookup and authentication services. Postfix queries domain existence via the <code>tcp:</code> protocol and performs SMTP authentication via <code>dovecot</code> SASL.
+    </div>
+</div>
+
+<div class="step">
+    <div class="step-num">4</div>
+    <h3>Verify Mail Delivery</h3>
+    <p>Verification steps:</p>
+    <h4>4.1 Confirm Postfix recognizes the mail domain</h4>
+    <pre>postmap -q example.com tcp:192.168.1.1:10025</pre>
+    <p>This should output <code>OK</code> or information about the mail domain.</p>
+
+    <h4>4.2 Send a test email</h4>
+    <p>Send a test email from an external mailbox (e.g., Gmail, QQ Mail) to <code>user@example.com</code>. Or use the command line:</p>
+    <pre>echo "Test email body" | mail -s "Test Subject" user@example.com</pre>
+    <p>Check the EasyMail logs; you should see output similar to:</p>
+    <pre>time="..." level=info msg="milter: filter result=accept" module=milter
+time="..." level=info msg="lmtp: delivered mail to user@example.com" module=lmtp</pre>
+
+    <h4>4.3 Check if the email arrived</h4>
+    <p>View the delivery records in the admin panel's <strong>Delivery Logs</strong>. The logs display the sender, recipient, filter result, and delivery status for each email.</p>
+
+    <h4>4.4 Check with an IMAP client</h4>
+    <p>Use any IMAP client to connect to the EasyMail server (port 143) and check the inbox. Configuration parameters:</p>
+    <ul>
+        <li><strong>IMAP Server</strong>: Your server IP</li>
+        <li><strong>IMAP Port</strong>: 143 (plain) or 993 (SSL)</li>
+        <li><strong>SMTP Server</strong>: Your Postfix server IP</li>
+        <li><strong>SMTP Port</strong>: 587 (STARTTLS) or 25</li>
+        <li><strong>Username</strong>: The full email address, e.g. <code>user@example.com</code></li>
+        <li><strong>Password</strong>: The password set when creating the mailbox</li>
+    </ul>
+    <p>For detailed client configuration, refer to the <a href="clients.html">Client Configuration Guide</a>.</p>
+</div>
+
+<div class="step">
+    <div class="step-num">5</div>
+    <h3>Configure Anti-Spam Filtering</h3>
+    <p>After the mail system is working normally, it is recommended to configure anti-spam filtering policies. Go to the <strong>Filter Rules</strong> page in the admin panel:</p>
+    <ul>
+        <li>Review the default filter rules</li>
+        <li>Adjust rule priorities as needed</li>
+        <li>Configure classification models (optional, requires prior training)</li>
+        <li>Enable ClamAV virus scanning (optional, requires ClamAV installation)</li>
+    </ul>
+    <p>For detailed configuration, refer to the filtering section in the <a href="admin.html">Admin Panel Guide</a>.</p>
+</div>
+
+<h2>Next Steps</h2>
+
+<ul>
+    <li><a href="admin.html">Explore the Admin Panel</a> — Learn more about management features</li>
+    <li><a href="postfix.html">Postfix Integration Guide</a> — Complete configuration details</li>
+    <li><a href="clients.html">Mail Client Configuration</a> — Detailed setup for Foxmail / Outlook / Thunderbird</li>
+    <li><a href="webmail.html">Using Webmail</a> — Send and receive emails via browser</li>
+</ul>
+
+</main>
+</div>
+</body>
+</html>

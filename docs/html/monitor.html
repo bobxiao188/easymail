@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>服务监控 — EasyMail 文档</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrapper">
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <a href="index.html" class="logo">EasyMail</a>
+        <div class="logo-sub">企业邮件网关</div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">入门</div>
+        <a href="index.html">产品概述</a>
+        <a href="setup.html">安装部署</a>
+        <a href="quickstart.html">快速入门</a>
+
+        <div class="nav-section">管理后台</div>
+        <a href="admin.html">后台功能指南</a>
+        <a href="postfix.html">Postfix 集成</a>
+
+        <div class="nav-section">使用指南</div>
+        <a href="clients.html">客户端配置</a>
+        <a href="webmail.html">Webmail</a>
+
+        <div class="nav-section">过滤参考</div>
+        <a href="features.html">内置特征列表</a>
+
+        <div class="nav-section">运维</div>
+        <a href="monitor.html" class="active">服务监控</a>
+        <a href="faq.html">常见问题</a>
+    </nav>
+</aside>
+
+<main class="content">
+
+<h1>服务监控</h1>
+
+<p>EasyMail 使用心跳机制监控各服务组件的运行状态。每个启用的服务定期向 Redis 写入心跳时间戳，管理后台通过读取 Redis 中的心跳记录判断各服务的健康状态。</p>
+
+<h2>心跳机制</h2>
+
+<p>心跳机制的运作流程：</p>
+
+<pre>
+启动时
+  │
+  ├── 创建全局 ServiceManager
+  ├── 注册各服务（Dovecot、LMTP、Milter、Admin、Webmail、IMAP、Classifier）
+  │     └── 每个服务有独立的心跳间隔（默认继承全局配置）
+  └── 启动心跳管理器
+        │
+        每 10 秒（可配置）：
+        ├── 遍历所有注册的服务
+        ├── 写入 Redis 当前时间戳
+        │     └── key:  easymail:service:{服务名}:heartbeat
+        │         value: ISO8601 时间戳
+        └── 更新到下一轮</pre>
+
+<p>心跳配置在 <code>easymail.yaml</code> 中：</p>
+
+<pre># 全局心跳配置
+heartbeat_second: 10  # 心跳间隔（秒），设为 0 或未配置 Redis 时自动禁用
+
+# 各服务配置（自动继承全局心跳设置）
+imap:
+  enable: true
+
+milter:
+  enable: true</pre>
+
+<div class="callout callout-info">
+    <strong>说明</strong> 心跳自动启用（当 <code>heartbeat_second &gt; 0</code> 且 Redis 可用时），无需在每个服务中单独配置。
+</div>
+
+<h2>管理控制面板</h2>
+
+<p>登录管理后台后，首页控制面板展示各服务的运行状态：</p>
+
+<table>
+<thead>
+<tr><th>状态</th><th>判断标准</th><th>图标</th></tr>
+</thead>
+<tbody>
+<tr><td>running</td><td>最后心跳时间 &lt; 30 秒</td><td>绿色</td></tr>
+<tr><td>warning</td><td>最后心跳时间 30-120 秒</td><td>黄色</td></tr>
+<tr><td>stopped</td><td>最后心跳时间 &gt; 120 秒 或 无心跳记录</td><td>红色</td></tr>
+</tbody>
+</table>
+
+<p>控制面板还展示：</p>
+<ul>
+    <li><strong>今日邮件统计</strong>：总收件数、过滤数、拒绝数、垃圾邮件数</li>
+    <li><strong>热门发件人</strong>：今日发件量 TOP10</li>
+    <li><strong>服务状态</strong>：所有服务的一览状态</li>
+</ul>
+
+<h2>CLI 心跳工具</h2>
+
+<p>EasyMail 附带 <code>heartbeat-cli</code> 命令行工具，可快速查看所有服务的心跳状态：</p>
+
+<pre>cd cmd/heartbeat-cli
+go run main.go -config /path/to/easymail.yaml</pre>
+
+<p>输出示例：</p>
+
+<pre>Service      Last Heartbeat          Age          Status
+----------------------------------------------------------------------
+dovecot      2026-07-08T10:30:45Z    3s           running
+lmtp         2026-07-08T10:30:45Z    3s           running
+milter       2026-07-08T10:30:45Z    3s           running
+admin        2026-07-08T10:30:45Z    3s           running
+webmail      2026-07-08T10:30:45Z    3s           running
+imap         2026-07-08T10:30:45Z    3s           running
+classifier   2026-07-08T10:30:45Z    3s           running</pre>
+
+<h2>API 查询</h2>
+
+<p>管理后台的 <code>GET /api/v1/dashboard/services</code> 接口返回服务状态 JSON，可用于外部监控系统的集成：</p>
+
+<pre>GET /api/v1/dashboard/services
+Authorization: Bearer {token}
+
+响应：
+{
+  "code": 0,
+  "data": {
+    "dovecot": { "status": "running", "lastHeartbeat": "2026-07-08T10:30:45Z" },
+    "lmtp":    { "status": "running", "lastHeartbeat": "2026-07-08T10:30:45Z" },
+    "milter":  { "status": "running", "lastHeartbeat": "2026-07-08T10:30:45Z" },
+    "admin":   { "status": "running", "lastHeartbeat": "2026-07-08T10:30:45Z" },
+    "webmail": { "status": "running", "lastHeartbeat": "2026-07-08T10:30:45Z" },
+    "imap":    { "status": "running", "lastHeartbeat": "2026-07-08T10:30:45Z" }
+  }
+}</pre>
+
+<h2>Redis 直接查询</h2>
+
+<p>如果需要手动或通过脚本检查心跳状态：</p>
+
+<pre># 列出所有注册的服务
+redis-cli keys "easymail:service:*"
+
+# 查看某个服务的心跳
+redis-cli get "easymail:service:imap:heartbeat"
+
+# 输出示例
+# "2026-07-08T10:30:45Z"</pre>
+
+<h2>邮件统计</h2>
+
+<p>管理后台的 API 还提供邮件流量统计：</p>
+
+<ul>
+    <li><strong>GET /api/v1/dashboard/stats</strong>：返回今日邮件统计数据（总数、过滤数、拒绝数、垃圾数）</li>
+    <li><strong>GET /api/v1/dashboard/top-senders</strong>：返回今日发件量 TOP10 的发件人</li>
+</ul>
+
+<p>这些统计数据通过 Redis 计数器实时计算，不依赖数据库查询，响应速度快。</p>
+
+</main>
+</div>
+</body>
+</html>

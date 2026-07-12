@@ -1,0 +1,30 @@
+{
+  "name": "admin",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
+    "axios": "^1.7.7",
+    "dayjs": "^1.11.20",
+    "element-plus": "^2.8.4",
+    "pinia": "^2.2.5",
+    "vue": "^3.5.30",
+    "vue-i18n": "^11.0.0",
+    "vue-router": "^4.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "@vitejs/plugin-vue": "^6.0.5",
+    "@vitejs/plugin-vue-jsx": "^5.1.0",
+    "sass-embedded": "^1.100.0",
+    "typescript": "^5.6.2",
+    "vite": "^8.0.1",
+    "vue-tsc": "^3.2.0"
+  }
+}

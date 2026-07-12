@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台指南 — EasyMail 文档</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrapper">
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <a href="index.html" class="logo">EasyMail</a>
+        <div class="logo-sub">企业邮件网关</div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">入门</div>
+        <a href="index.html">产品概述</a>
+        <a href="setup.html">安装部署</a>
+        <a href="quickstart.html">快速入门</a>
+
+        <div class="nav-section">管理后台</div>
+        <a href="admin.html" class="active">后台功能指南</a>
+        <a href="postfix.html">Postfix 集成</a>
+
+        <div class="nav-section">使用指南</div>
+        <a href="clients.html">客户端配置</a>
+        <a href="webmail.html">Webmail</a>
+
+        <div class="nav-section">过滤参考</div>
+        <a href="features.html">内置特征列表</a>
+
+        <div class="nav-section">运维</div>
+        <a href="monitor.html">服务监控</a>
+        <a href="faq.html">常见问题</a>
+    </nav>
+</aside>
+
+<main class="content">
+
+<h1>管理后台功能指南</h1>
+
+<p>管理后台是 EasyMail 的核心操作界面，提供域名管理、邮箱管理、过滤规则、分类模型、投递日志等功能。默认监听 <code>8000</code> 端口。</p>
+
+<h2>控制面板</h2>
+<p>登录后首页为控制面板，展示系统运行的关键信息：</p>
+<ul>
+    <li><strong>服务状态</strong>：各组件（Dovecot、LMTP、Milter、Admin、Webmail、IMAP、Classifier）的运行状态和最后心跳时间</li>
+    <li><strong>今日邮件统计</strong>：收到的邮件总数、已过滤数、拒绝数、垃圾邮件数</li>
+    <li><strong>热门发件人</strong>：今日发件量最多的发件人 TOP10</li>
+    <li><strong>最近活动</strong>：最近的投递记录和系统事件</li>
+</ul>
+
+<h2>域名管理</h2>
+
+<h3>添加域名</h3>
+<p>进入【域名管理】页面，点击"添加域名"。需要填写：</p>
+<ul>
+    <li><strong>域名</strong>：邮件域名，例如 <code>example.com</code></li>
+    <li><strong>描述</strong>：备注信息（可选）</li>
+</ul>
+<p>添加后，系统会在 MySQL 中创建该域名的管理记录，并准备存储目录结构。</p>
+
+<h3>域名状态</h3>
+<table>
+<thead>
+<tr><th>状态</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td>启用</td><td>域名可正常接收邮件</td></tr>
+<tr><td>禁用</td><td>域名暂停邮件接收，Postfix 查询时将返回不存在</td></tr>
+<tr><td>删除</td><td>标记删除，不立即释放资源</td></tr>
+</tbody>
+</table>
+
+<h3>DKIM 配置</h3>
+<p>在域名详情中，可以生成和管理 DKIM 密钥对。DKIM 用于对发出的邮件进行签名，接收方可以通过 DNS 查询公钥验证邮件真实性。</p>
+<ul>
+    <li>点击"生成 DKIM 密钥对"</li>
+    <li>系统生成 RSA 公私钥，公钥以 DNS TXT 记录格式展示</li>
+    <li>将 TXT 记录添加到域名的 DNS 中：<code>default._domainkey.example.com TXT "v=DKIM1; k=rsa; p=公钥内容"</code></li>
+    <li>在 Postfix 或 EasyMail 的出站邮件中启用 DKIM 签名</li>
+</ul>
+
+<h3>域名操作</h3>
+<ul>
+    <li><strong>清除</strong>：删除该域名下的所有邮件数据（磁盘 + SQLite 索引），谨慎操作</li>
+    <li><strong>启用/禁用</strong>：切换域名状态，禁用时该域名下的所有邮箱不可收发邮件</li>
+</ul>
+
+<h2>邮箱管理</h2>
+
+<h3>添加邮箱</h3>
+<p>进入【邮箱管理】页面，点击"添加邮箱"：</p>
+<ul>
+    <li><strong>邮箱地址</strong>：完整邮箱地址，如 <code>user@example.com</code></li>
+    <li><strong>密码</strong>：IMAP 登录密码</li>
+    <li><strong>所属域名</strong>：选择已添加的域名</li>
+    <li><strong>邮箱容量</strong>：磁盘空间限制（可选，0 表示不限制）</li>
+</ul>
+
+<h3>邮箱状态</h3>
+<table>
+<thead>
+<tr><th>状态</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td>启用</td><td>邮箱可正常收发邮件</td></tr>
+<tr><td>禁用</td><td>邮箱暂停使用，IMAP 登录和邮件投递均被阻止</td></tr>
+</tbody>
+</table>
+
+<h3>邮箱操作</h3>
+<ul>
+    <li><strong>修改密码</strong>：重置邮箱登录密码</li>
+    <li><strong>清理邮箱</strong>：删除该邮箱下的所有邮件数据</li>
+    <li><strong>启用/禁用</strong>：控制邮箱可用状态</li>
+</ul>
+
+<h2>过滤规则管理</h2>
+
+<h3>过滤管线</h3>
+<p>EasyMail 的反垃圾过滤通过 Milter 协议与 Postfix 对接，分 6 个阶段处理每封入站邮件：</p>
+<ol>
+    <li><strong>Connect 阶段</strong>：记录连接 IP，进行 IP 信誉检查</li>
+    <li><strong>Helo 阶段</strong>：验证客户端 HELO/EHLO 主机名，检查反向 DNS</li>
+    <li><strong>MailFrom 阶段</strong>：验证发件人域名，检查 SPF 记录</li>
+    <li><strong>RcptTo 阶段</strong>：验证收件人是否存在，检查是否在联系人列表中</li>
+    <li><strong>Headers 阶段</strong>：分析邮件头部（Received、DKIM-Signature 等），移除入站 EasyMail 策略头</li>
+    <li><strong>Body 阶段</strong>：MIME 解析、文本/HTML 提取、URL 特征分析、附件风险评估、ML 分类推理、ClamAV 病毒扫描、规则引擎最终判定</li>
+</ol>
+
+<h3>过滤结果</h3>
+<table>
+<thead>
+<tr><th>结果</th><th>动作</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td>accept</td><td>正常投递</td><td>邮件进入收件箱</td></tr>
+<tr><td>spam</td><td>标记为垃圾</td><td>邮件投递到垃圾邮件文件夹</td></tr>
+<tr><td>quarantine</td><td>隔离</td><td>邮件暂存隔离区，需管理员人工审核</td></tr>
+<tr><td>reject</td><td>SMTP 拒绝</td><td>直接返回 5xx 错误码，邮件不入库</td></tr>
+</tbody>
+</table>
+
+<h3>创建过滤规则</h3>
+<p>在【过滤规则】页面，点击"添加规则"：</p>
+<ul>
+    <li><strong>名称</strong>：规则的描述性名称</li>
+    <li><strong>条件</strong>：选择特征提取器和比较条件。例如：
+        <ul>
+            <li>连接 IP 在已知恶意 IP 列表中</li>
+            <li>HELO 名称与反向 DNS 不匹配</li>
+            <li>发件人域名无 MX 记录</li>
+            <li>正文包含特定关键词</li>
+            <li>URL 链接指向已知恶意站点</li>
+            <li>附件类型为高危格式</li>
+        </ul>
+    </li>
+    <li><strong>动作</strong>：匹配后的处理方式（接受 / 标记垃圾 / 隔离 / 拒绝）</li>
+    <li><strong>优先级</strong>：数字越小优先级越高，规则按优先级顺序评估</li>
+    <li><strong>启用状态</strong>：可临时禁用某条规则</li>
+</ul>
+
+<h3>ML 分类模型</h3>
+<p>【分类模型】页面管理机器学习分类引擎：</p>
+<ul>
+    <li><strong>模型类型</strong>：FastText（基于词向量的文本分类）、DistilBERT（基于 Transformer 的深度分类器）、XGBoost（待实现）</li>
+    <li><strong>模型管理</strong>：导入、导出、训练、删除模型</li>
+    <li><strong>样本管理</strong>：在【训练样本】页面管理全局训练数据，用于模型训练</li>
+    <li><strong>训练</strong>：使用样本数据训练分类模型，训练完成后自动生效</li>
+    <li><strong>预测</strong>：对指定邮件内容进行预测，验证模型效果</li>
+</ul>
+
+<div class="callout callout-info">
+    <strong>提示</strong> ML 分类是可选的。如果不配置模型，系统仅使用规则引擎进行过滤。
+</div>
+
+<h2>投递日志</h2>
+<p>【投递日志】页面记录每封邮件的处理详情：</p>
+<ul>
+    <li>发件人、收件人</li>
+    <li>邮件主题</li>
+    <li>过滤时间</li>
+    <li>过滤结果（accept / spam / quarantine / reject）</li>
+    <li>匹配的规则</li>
+    <li>特征提取快照</li>
+    <li>投递状态</li>
+</ul>
+<p>日志支持按时间范围、发件人、收件人、过滤结果进行筛选，方便排查问题。</p>
+
+<h2>管理员账户</h2>
+<p>在【个人资料】页面可以管理当前管理员账号：</p>
+<ul>
+    <li>修改姓名、邮箱</li>
+    <li>修改密码</li>
+    <li>切换界面语言（支持中文/英文）</li>
+    <li>切换界面主题</li>
+</ul>
+
+<h2>Postfix 管理页面</h2>
+<p>如果部署了 Postfix Agent，管理后台还提供以下 Postfix 管理功能：</p>
+<ul>
+    <li><strong>服务状态</strong>：查看 Postfix 运行状态和配置版本</li>
+    <li><strong>配置管理</strong>：远程管理 Postfix 配置参数，支持配置下发和回滚</li>
+    <li><strong>代理管理</strong>：管理 Postfix Agent 服务器</li>
+    <li><strong>队列管理</strong>：查看 Postfix 邮件队列</li>
+</ul>
+<p>更多详情请参考 <a href="postfix.html">Postfix 集成</a>。</p>
+
+</main>
+</div>
+</body>
+</html>

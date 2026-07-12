@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>常见问题 — EasyMail 文档</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrapper">
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <a href="index.html" class="logo">EasyMail</a>
+        <div class="logo-sub">企业邮件网关</div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">入门</div>
+        <a href="index.html">产品概述</a>
+        <a href="setup.html">安装部署</a>
+        <a href="quickstart.html">快速入门</a>
+
+        <div class="nav-section">管理后台</div>
+        <a href="admin.html">后台功能指南</a>
+        <a href="postfix.html">Postfix 集成</a>
+
+        <div class="nav-section">使用指南</div>
+        <a href="clients.html">客户端配置</a>
+        <a href="webmail.html">Webmail</a>
+
+        <div class="nav-section">过滤参考</div>
+        <a href="features.html">内置特征列表</a>
+
+        <div class="nav-section">运维</div>
+        <a href="monitor.html">服务监控</a>
+        <a href="faq.html" class="active">常见问题</a>
+    </nav>
+</aside>
+
+<main class="content">
+
+<h1>常见问题</h1>
+
+<style>
+.faq-item { margin: 0 0 4px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.faq-q { padding: 14px 18px; background: #f8f9fa; cursor: default; font-weight: 600; font-size: 15px; color: var(--primary-dark); }
+.faq-q::before { content: "Q. "; color: var(--accent); }
+.faq-a { padding: 14px 18px; background: #fff; border-top: 1px solid var(--border); font-size: 14px; line-height: 1.7; }
+.faq-a p { margin: 0 0 10px; }
+.faq-a ul { margin: 0 0 10px 16px; }
+.faq-a pre { margin: 0 0 10px; }
+</style>
+
+<div class="faq-item">
+    <div class="faq-q">无法登录管理后台</div>
+    <div class="faq-a">
+        <p><strong>可能的原因和解决方法：</strong></p>
+        <ul>
+            <li>服务未启动：确认 EasyMail 进程正在运行，日志中无报错</li>
+            <li>端口未开放：检查防火墙是否放行了 8000 端口</li>
+            <li>默认管理员密码：在启动日志中查找 <code>admin password</code> 字段获取初始密码</li>
+            <li>如果忘记密码，可以通过数据库直接重置管理员密码</li>
+        </ul>
+    </div>
+</div>
+
+<div class="faq-item">
+    <div class="faq-q">客户端连接 IMAP 失败</div>
+    <div class="faq-a">
+        <p><strong>请按以下顺序排查：</strong></p>
+        <ul>
+            <li>确认 IMAP 服务是否在运行（检查控制面板服务状态或 EasyMail 日志）</li>
+            <li>确认邮箱账户已创建且状态为"启用"</li>
+            <li>确认使用的是完整的邮箱地址作为用户名（如 <code>user@example.com</code>，不是纯 <code>user</code>）</li>
+            <li>确认防火墙放行了 143 端口（和 993 端口，如果使用 SSL）</li>
+            <li>检查 EasyMail 日志中是否有 IMAP 连接失败的错误信息</li>
+            <li>在服务器本地使用 telnet 测试：<code>telnet 127.0.0.1 143</code>，看是否能建立连接</li>
+        </ul>
+        <div class="callout callout-info">
+            <strong>注意</strong> EasyMail 的 IMAP 支持 AUTHENTICATE PLAIN 和 LOGIN 认证方式。如果客户端配置为安全认证（如 CRAM-MD5），请改为普通密码认证。
+        </div>
+    </div>
+</div>
+
+<div class="faq-item">
+    <div class="faq-q">邮件发送失败（SMTP 拒绝）</div>
+    <div class="faq-a">
+        <p><strong>可能的原因：</strong></p>
+        <ul>
+            <li>Postfix 未正确配置或未运行</li>
+            <li>SMTP 认证不通过：确认用户名（完整邮箱地址）和密码正确</li>
+            <li>发件人域名未在 EasyMail 中添加</li>
+            <li>Postfix 的 <code>smtpd_recipient_restrictions</code> 拒绝连接</li>
+            <li>邮件被 Milter 过滤拒绝（检查投递日志中的过滤结果）</li>
+            <li>端口被封：25 端口常被 ISP 封锁，建议使用 587 端口</li>
+        </ul>
+        <p><strong>排查方法：</strong>查看 Postfix 日志 <code>/var/log/mail.log</code> 和 EasyMail 日志中的 Milter 决策。</p>
+    </div>
+</div>
+
+<div class="faq-item">
+    <div class="faq-q">收不到外部发来的邮件</div>
+    <div class="faq-a">
+        <p><strong>排查链路：</strong></p>
+        <ul>
+            <li>检查 DNS MX 记录是否正确指向了 Postfix 服务器</li>
+            <li>确认 Postfix 日志中外部发件人是否成功连接到服务器</li>
+            <li>查看 EasyMail 投递日志确认邮件是否被过滤规则拦截（spam / quarantine / reject）</li>
+            <li>检查 Spam 和 Quarantine 文件夹中是否有被误判的邮件</li>
+            <li>检查存储磁盘空间是否充足</li>
+            <li>确认邮箱容量未超限</li>
+        </ul>
+    </div>
+</div>
+
+<div class="faq-item">
+    <div class="faq-q">Foxmail / Outlook 客户端连接后立即断开</div>
+    <div class="faq-a">
+        <p>这通常是 IMAP 协议兼容性问题。请检查：</p>
+        <ul>
+            <li>EasyMail 版本是否为最新（兼容性问题可能已在后续版本修复）</li>
+            <li>检查 EasyMail 日志中 IMAP 连接断开的具体错误信息</li>
+            <li>IMAP 响应格式必须严格遵循 RFC 3501 规范，部分客户端对格式敏感</li>
+            <li>不要在 FETCH 响应中使用 <code>BODY.PEEK</code> 作为数据项名，应改为 <code>BODY</code></li>
+            <li>确认 RECENT 响应值不为 0（如果邮件已存在）</li>
+        </ul>
+    </div>
+</div>
+
+<div class="faq-item">
+    <div class="faq-q">Milter 过滤导致正常邮件被误判</div>
+    <div class="faq-a">
+        <p><strong>解决方案：</strong></p>
+        <ul>
+            <li>在【过滤规则】页面调整规则的优先级或阈值</li>
+            <li>将误判的邮件从垃圾箱移回收件箱，系统会学习</li>
+            <li>将发件人加入白名单（通过自定义规则）</li>
+            <li>调整 ML 分类模型的阈值</li>
+            <li>收集误判样本用于重新训练分类模型</li>
+            <li>临时禁用导致误判的规则，定位问题规则</li>
+        </ul>
+    </div>
+</div>
+
+<div class="faq-item">
+    <div class="faq-q">如何备份和恢复邮件数据</div>
+    <div class="faq-a">
+        <p>EasyMail 的邮件数据包含三部分：</p>
+        <ul>
+            <li><strong>MySQL 数据库</strong>：域名、账户、过滤规则、分类模型等管理数据<br>
+                备份方法：<code>mysqldump -u root -p easymail &gt; easymail_backup.sql</code></li>
+            <li><strong>磁盘存储</strong>：原始 .eml 文件（位于配置的 <code>storage_root</code> 目录下）<br>
+                备份方法：直接复制目录，如 <code>rsync -av /var/easymail/data/ /backup/</code></li>
+            <li><strong>Redis 数据</strong>：缓存和统计（非必需，丢失后可自动重建）</li>
+        </ul>
+        <p><strong>恢复流程：</strong>先恢复 MySQL 数据，然后恢复磁盘文件，最后启动 EasyMail。Redis 数据会自动重建。</p>
+    </div>
+</div>
+
+<div class="faq-item">
+    <div class="faq-q">如何升级 EasyMail</div>
+    <div class="faq-a">
+        <pre># 拉取最新代码
+git pull
+
+# 重新编译
+go build -o easymail ./cmd/easymail
+
+# 备份当前二进制
+cp /usr/local/bin/easymail /usr/local/bin/easymail.bak
+
+# 替换二进制
+cp easymail /usr/local/bin/easymail
+
+# 重启服务
+systemctl restart easymail</pre>
+        <div class="callout callout-warning">
+            <strong>注意</strong> 升级前建议先备份 MySQL 和存储目录。<code>database.automigrate: true</code> 配置会在启动时自动应用数据库 schema 变更。
+        </div>
+    </div>
+</div>
+
+<div class="faq-item">
+    <div class="faq-q">如何查看系统日志</div>
+    <div class="faq-a">
+        <p>EasyMail 默认输出日志到标准输出（stdout）。如果使用 systemd 管理：</p>
+        <pre>journalctl -u easymail -f</pre>
+        <p>日志级别在 <code>easymail.yaml</code> 中配置：</p>
+        <ul>
+            <li><code>debug</code>：详细调试信息（排查问题时使用）</li>
+            <li><code>info</code>：常规运行信息（默认）</li>
+            <li><code>warn</code>：仅警告和错误</li>
+            <li><code>error</code>：仅错误</li>
+        </ul>
+        <p>日志格式示例：</p>
+        <pre>time="2026-07-08T10:30:00+08:00" level=info msg="imap: connection from 192.168.1.100:54321" module=imap
+time="2026-07-08T10:30:01+08:00" level=info msg="lmtp: delivered mail to user@example.com" module=lmtp
+time="2026-07-08T10:30:02+08:00" level=debug msg="[IMAP-DEBUG] C: C1 LOGIN user@example.com ***" module=imap</pre>
+    </div>
+</div>
+
+<div class="faq-item">
+    <div class="faq-q">如何配置 HTTPS</div>
+    <div class="faq-a">
+        <p>EasyMail 的管理后台和 Webmail 默认使用明文 HTTP。生产环境建议配置 HTTPS：</p>
+        <p><strong>方案一（推荐）</strong>：使用反向代理（Nginx / Caddy）</p>
+        <pre># Nginx 配置示例
+server {
+    listen 443 ssl;
+    server_name admin.example.com;
+
+    ssl_certificate /etc/ssl/certs/example.com.pem;
+    ssl_certificate_key /etc/ssl/private/example.com.key;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}</pre>
+        <p><strong>方案二</strong>：在代码层面支持 TLS（需自行实现证书加载配置）。</p>
+    </div>
+</div>
+
+<div class="faq-item">
+    <div class="faq-q">EasyMail 支持哪些数据库</div>
+    <div class="faq-a">
+        <p>通过 GORM ORM 支持：</p>
+        <ul>
+            <li><strong>MySQL</strong> 8.0+（默认，推荐）</li>
+            <li><strong>PostgreSQL</strong>（修改配置文件中的驱动类型）</li>
+            <li><strong>SQLite3</strong>（仅测试用，生产环境不推荐）</li>
+        </ul>
+        <p>在配置文件中修改：</p>
+        <pre>database:
+  driver: mysql       # 可选: mysql / postgres / sqlite
+  dsn: "..."</pre>
+    </div>
+</div>
+
+</main>
+</div>
+</body>
+</html>

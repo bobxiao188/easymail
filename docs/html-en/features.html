@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Built-in Feature List — EasyMail Documentation</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrapper">
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <a href="index.html" class="logo">EasyMail</a>
+        <div class="logo-sub">Enterprise Mail Gateway</div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">Getting Started</div>
+        <a href="index.html">Product Overview</a>
+        <a href="setup.html">Installation & Deployment</a>
+        <a href="quickstart.html">Quick Start</a>
+
+        <div class="nav-section">Admin Panel</div>
+        <a href="admin.html">Admin Panel Guide</a>
+        <a href="postfix.html">Postfix Integration</a>
+
+        <div class="nav-section">User Guide</div>
+        <a href="clients.html">Client Configuration</a>
+        <a href="webmail.html">Webmail</a>
+
+        <div class="nav-section">Filter Reference</div>
+        <a href="features.html" class="active">Built-in Feature List</a>
+
+        <div class="nav-section">Operations</div>
+        <a href="monitor.html">Service Monitoring</a>
+        <a href="faq.html">FAQ</a>
+    </nav>
+</aside>
+
+<main class="content">
+
+<h1>Built-in Feature List</h1>
+
+<p>EasyMail's filtering engine provides the following built-in features, which can be directly referenced in the condition expressions of filter rules. Features are organized by function category, with each feature annotated with its data type, processing stage, and a brief description.</p>
+
+<div class="callout callout-info">
+    <strong>Note</strong> The "Stage" in the table below corresponds to the SMTP processing pipeline: 0=Connection Setup, 1=HELO, 2=Sender, 3=Recipient, 4=Headers, 5=Body. Features within the same category may be distributed across multiple stages.
+</div>
+
+<h2>1. Connection Reputation</h2>
+
+<p>Collected during the SMTP connection establishment phase, evaluating the network identity and reputation of the client.</p>
+
+<h3>Reverse DNS (rDNS)</h3>
+<table>
+<thead>
+<tr><th>Feature Key</th><th>Type</th><th>Stage</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>ip_ptr_ok</code></td><td>bool</td><td>0</td><td>Connecting IP has at least one PTR reverse DNS record</td></tr>
+<tr><td><code>ip_ptr_count</code></td><td>number</td><td>0</td><td>Number of PTR records</td></tr>
+<tr><td><code>ip_ptr_has_dot</code></td><td>bool</td><td>0</td><td>PTR hostname contains a dot (indicates a fully qualified domain check)</td></tr>
+</tbody>
+</table>
+
+<h3>Forward-Confirmed Reverse DNS (FCrDNS)</h3>
+<table>
+<thead>
+<tr><th>Feature Key</th><th>Type</th><th>Stage</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>ip_fcrdns_ok</code></td><td>bool</td><td>0</td><td>FCrDNS verification passed: A/AAAA query of the PTR name includes the original connecting IP</td></tr>
+<tr><td><code>ip_ptr_forward_match_count</code></td><td>number</td><td>0</td><td>Number of the top 3 PTR records whose forward DNS resolves back to the original IP</td></tr>
+</tbody>
+</table>
+
+<h3>IP Connection Statistics</h3>
+<table>
+<thead>
+<tr><th>Feature Key</th><th>Type</th><th>Stage</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>ip_connect_count_1d</code></td><td>number</td><td>0</td><td>Number of connections from this IP in the current calendar day (Redis TTL 24h)</td></tr>
+<tr><td><code>ip_connect_count_5m</code></td><td>number</td><td>0</td><td>Number of connections from this IP in a sliding 5-minute window</td></tr>
+<tr><td><code>ip_connect_rate_1d</code></td><td>number</td><td>0</td><td>Today's connection rate (count / seconds since midnight)</td></tr>
+<tr><td><code>ip_connect_rate_5m</code></td><td>number</td><td>0</td><td>5-minute connection rate (count / 300 seconds)</td></tr>
+</tbody>
+</table>
+
+<h3>IP Outcome Statistics</h3>
+<table>
+<thead>
+<tr><th>Feature Key</th><th>Type</th><th>Stage</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>ip_outcome_accept_1d</code></td><td>number</td><td>0</td><td>Number of deliveries accepted from this IP today</td></tr>
+<tr><td><code>ip_outcome_reject_1d</code></td><td>number</td><td>0</td><td>Number of rejections from this IP today</td></tr>
+<tr><td><code>ip_outcome_spam_1d</code></td><td>number</td><td>0</td><td>Number of emails marked as spam from this IP today</td></tr>
+<tr><td><code>ip_outcome_quarantine_1d</code></td><td>number</td><td>0</td><td>Number of quarantined emails from this IP today</td></tr>
+<tr><td><code>ip_outcome_total_1d</code></td><td>number</td><td>0</td><td>Total number of events processed from this IP today</td></tr>
+<tr><td><code>ip_reject_rate_1d</code></td><td>number</td><td>0</td><td>Rejection rate for this IP today</td></tr>
+<tr><td><code>ip_reject_rate_5m</code></td><td>number</td><td>0</td><td>Rejection rate for this IP in a sliding 5-minute window</td></tr>
+</tbody>
+</table>
+
+<h2>2. HELO Check</h2>
+
+<p>Collected during the SMTP HELO/EHLO phase, verifying the identity declared by the client.</p>
+
+<table>
+<thead>
+<tr><th>Feature Key</th><th>Type</th><th>Stage</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>helo_present</code></td><td>bool</td><td>1</td><td>Whether the client sent a non-empty HELO/EHLO hostname</td></tr>
+<tr><td><code>helo_rdns_match</code></td><td>bool</td><td>1</td><td>HELO hostname matches any PTR record (exact match or subdomain match)</td></tr>
+<tr><td><code>helo_rdns_name_count</code></td><td>number</td><td>1</td><td>Number of PTR records used for HELO comparison (up to 3)</td></tr>
+</tbody>
+</table>
+
+<h2>3. Sender Verification</h2>
+
+<p>Collected during the MAIL FROM phase, verifying the sender domain's DNS infrastructure and sender statistics.</p>
+
+<h3>Sender Domain DNS</h3>
+<table>
+<thead>
+<tr><th>Feature Key</th><th>Type</th><th>Stage</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>sender_domain_has_mx</code></td><td>bool</td><td>2</td><td>Sender domain has MX records</td></tr>
+<tr><td><code>sender_domain_has_a</code></td><td>bool</td><td>2</td><td>Sender domain has A/AAAA records</td></tr>
+<tr><td><code>sender_domain_mx_count</code></td><td>number</td><td>2</td><td>Number of MX records</td></tr>
+<tr><td><code>sender_domain_mx_pref_min</code></td><td>number</td><td>2</td><td>Lowest (best) MX preference value</td></tr>
+<tr><td><code>sender_domain_mx_is_null</code></td><td>bool</td><td>2</td><td>Whether a null MX exists ("." indicates the domain does not accept mail, RFC 7505)</td></tr>
+<tr><td><code>sender_domain_a_count</code></td><td>number</td><td>2</td><td>Number of A/AAAA records</td></tr>
+</tbody>
+</table>
+
+<h3>SPF Verification</h3>
+<table>
+<thead>
+<tr><th>Feature Key</th><th>Type</th><th>Stage</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>spf_result</code></td><td>number</td><td>2</td><td>SPF result numeric value: 0=None, 1=Neutral, 2=Pass, 3=SoftFail, 4=Fail, 5=TempError, 6=PermError</td></tr>
+<tr><td><code>spf_pass</code></td><td>bool</td><td>2</td><td>SPF verification passed</td></tr>
+<tr><td><code>spf_fail</code></td><td>bool</td><td>2</td><td>SPF verification failed (Fail or SoftFail)</td></tr>
+<tr><td><code>spf_softfail</code></td><td>bool</td><td>2</td><td>SPF SoftFail</td></tr>
+<tr><td><code>spf_neutral</code></td><td>bool</td><td>2</td><td>SPF Neutral</td></tr>
+<tr><td><code>spf_none</code></td><td>bool</td><td>2</td><td>No SPF record found</td></tr>
+<tr><td><code>spf_error</code></td><td>bool</td><td>2</td><td>SPF temporary error or permanent error</td></tr>
+<tr><td><code>spf_skipped</code></td><td>bool</td><td>2</td><td>SPF check skipped (no connecting IP, sender, or DNS resolver)</td></tr>
+</tbody>
+</table>
+
+<h3>Sender Statistics</h3>
+<table>
+<thead>
+<tr><th>Feature Key</th><th>Type</th><th>Stage</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>sender_mailfrom_count_1d</code></td><td>number</td><td>2</td><td>Number of MAIL FROM events for this sender today</td></tr>
+<tr><td><code>sender_mailfrom_count_5m</code></td><td>number</td><td>2</td><td>Number of MAIL FROM events for this sender in a sliding 5-minute window</td></tr>
+<tr><td><code>sender_outcome_accept_1d</code></td><td>number</td><td>2</td><td>Number of deliveries accepted from this sender today</td></tr>
+<tr><td><code>sender_outcome_reject_1d</code></td><td>number</td><td>2</td><td>Number of rejections for this sender today</td></tr>
+<tr><td><code>sender_outcome_spam_1d</code></td><td>number</td><td>2</td><td>Number of emails marked as spam from this sender today</td></tr>
+<tr><td><code>sender_outcome_quarantine_1d</code></td><td>number</td><td>2</td><td>Number of quarantined emails from this sender today</td></tr>
+<tr><td><code>sender_outcome_total_1d</code></td><td>number</td><td>2</td><td>Total number of events processed for this sender today</td></tr>
+<tr><td><code>sender_reject_rate_1d</code></td><td>number</td><td>2</td><td>Rejection rate for this sender today</td></tr>
+</tbody>
+</table>
+
+<h2>4. Recipient Check</h2>
+
+<p>Collected during the RCPT TO phase, verifying the validity of the recipient and the sender-to-recipient relationship.</p>
+
+<h3>Recipient Basic Information</h3>
+<table>
+<thead>
+<tr><th>Feature Key</th><th>Type</th><th>Stage</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>rcpt_count</code></td><td>number</td><td>3</td><td>Number of RCPT TO recipients for this email</td></tr>
+<tr><td><code>sender_has_mailfrom</code></td><td>bool</td><td>3</td><td>Whether the MAIL FROM address is non-empty</td></tr>
+<tr><td><code>sender_rcpt_count</code></td><td>number</td><td>3</td><td>Same as <code>rcpt_count</code>, alias under the sender namespace</td></tr>
+<tr><td><code>rcpt_domain_present</code></td><td>bool</td><td>3</td><td>Whether the recipient address includes a domain part</td></tr>
+</tbody>
+</table>
+
+<h3>Sender-to-Recipient Domain Statistics</h3>
+<table>
+<thead>
+<tr><th>Feature Key</th><th>Type</th><th>Stage</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>sender_rcpt_domain_count_1d</code></td><td>number</td><td>3</td><td>Number of events from this sender to the recipient domain today</td></tr>
+<tr><td><code>sender_rcpt_domain_count_5m</code></td><td>number</td><td>3</td><td>Number of events from this sender to the recipient domain in a sliding 5-minute window</td></tr>
+<tr><td><code>sender_rcpt_domain_accept_1d</code></td><td>number</td><td>3</td><td>Number of deliveries accepted for this (sender, recipient domain) pair today</td></tr>
+<tr><td><code>sender_rcpt_domain_reject_1d</code></td><td>number</td><td>3</td><td>Number of rejections for this (sender, recipient domain) pair today</td></tr>
+<tr><td><code>sender_rcpt_domain_spam_1d</code></td><td>number</td><td>3</td><td>Number of spam marks for this (sender, recipient domain) pair today</td></tr>
+<tr><td><code>sender_rcpt_domain_quarantine_1d</code></td><td>number</td><td>3</td><td>Number of quarantines for this (sender, recipient domain) pair today</td></tr>
+<tr><td><code>sender_rcpt_domain_total_1d</code></td><td>number</td><td>3</td><td>Total number of events for this (sender, recipient domain) pair today</td></tr>
+<tr><td><code>sender_rcpt_domain_reject_rate_1d</code></td><td>number</td><td>3</td><td>Rejection rate for this (sender, recipient domain) pair today</td></tr>
+</tbody>
+</table>
+
+<h3>Local Verification & Contacts</h3>
+<table>
+<thead>
+<tr><th>Feature Key</th><th>Type</th><th>Stage</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>rcpt_domain_is_local</code></td><td>bool</td><td>3</td><td>Whether the recipient domain is a locally managed domain</td></tr>
+<tr><td><code>rcpt_mailbox_exists</code></td><td>bool</td><td>3</td><td>Whether the recipient mailbox exists and is enabled</td></tr>
+<tr><td><code>rcpt_contact_sender_hit</code></td><td>bool</td><td>3</td><td>Whether the sender is in the recipient's contacts</td></tr>
+</tbody>
+</table>
+
+<h2>5. Header Analysis</h2>
+
+<p>Collected during the Headers phase, analyzing the overall characteristics of the email header structure.</p>
+
+<table>
+<thead>
+<tr><th>Feature Key</th><th>Type</th><th>Stage</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>header_fields</code></td><td>number</td><td>4</td><td>Total number of MIME header fields</td></tr>
+</tbody>
+</table>
+
+<h2>6. Deep Body Analysis</h2>
+
+<p>Collected during the Body phase, performing comprehensive analysis of the email body, attachments, URLs, and authentication results.</p>
+
+<h3>Mail Structure</h3>
+<table>
+<thead>
+<tr><th>Feature Key</th><th>Type</th><th>Stage</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>body_bytes</code></td><td>number</td><td>5</td><td>Raw byte size of the email body</td></tr>
+<tr><td><code>body_bytes_partial</code></td><td>number</td><td>5</td><td>Milter accumulated body fragment bytes (for early partial inspection)</td></tr>
+<tr><td><code>subject_len</code></td><td>number</td><td>5</td><td>Unicode character length of the decoded email subject</td></tr>
+<tr><td><code>has_list_unsubscribe</code></td><td>bool</td><td>5</td><td>Whether the List-Unsubscribe header is present</td></tr>
+<tr><td><code>mime_part_count</code></td><td>number</td><td>5</td><td>Number of MIME structure nodes (identified by the enmime parser)</td></tr>
+<tr><td><code>attachment_count</code></td><td>number</td><td>5</td><td>Number of attachments</td></tr>
+</tbody>
+</table>
+
+<h3>URL Analysis</h3>
+<table>
+<thead>
+<tr><th>Feature Key</th><th>Type</th><th>Stage</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>body_url_count</code></td><td>number</td><td>5</td><td>Total number of http/https URLs extracted from HTML and text body</td></tr>
+<tr><td><code>body_url_has_http</code></td><td>bool</td><td>5</td><td>At least one http:// URL</td></tr>
+<tr><td><code>body_url_has_https</code></td><td>bool</td><td>5</td><td>At least one https:// URL</td></tr>
+<tr><td><code>body_url_short_count</code></td><td>number</td><td>5</td><td>Number of short/redirect-type URLs</td></tr>
+<tr><td><code>body_url_has_short</code></td><td>bool</td><td>5</td><td>Whether the body contains short-link pattern URLs</td></tr>
+</tbody>
+</table>
+
+<h3>Attachment Risk</h3>
+<table>
+<thead>
+<tr><th>Feature Key</th><th>Type</th><th>Stage</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>attachment_risky_ext_count</code></td><td>number</td><td>5</td><td>Number of attachments with high-risk extensions (exe, dll, scr, bat, cmd, ps1, vbs, js, jar, lnk, iso, hta, msi, reg, wsf)</td></tr>
+<tr><td><code>attachment_risky_ext_ratio</code></td><td>number</td><td>5</td><td>Ratio of high-risk attachments (0.0–1.0)</td></tr>
+<tr><td><code>attachment_name_double_ext_cnt</code></td><td>number</td><td>5</td><td>Number of attachments with double extensions in the filename (e.g. invoice.pdf.exe)</td></tr>
+</tbody>
+</table>
+
+<h3>Virus Scanning</h3>
+<table>
+<thead>
+<tr><th>Feature Key</th><th>Type</th><th>Stage</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>antivirus_hit</code></td><td>number</td><td>5</td><td>ClamAV detection result: &gt;0 indicates detection count, -1 indicates scan failure</td></tr>
+</tbody>
+</table>
+
+<h3>DMARC Verification</h3>
+<table>
+<thead>
+<tr><th>Feature Key</th><th>Type</th><th>Stage</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>dmarc_has_policy</code></td><td>bool</td><td>5</td><td>From domain has a resolvable DMARC policy record</td></tr>
+<tr><td><code>dmarc_policy_none</code></td><td>bool</td><td>5</td><td>DMARC policy is p=none (no enforcement)</td></tr>
+<tr><td><code>dmarc_policy_quarantine</code></td><td>bool</td><td>5</td><td>DMARC policy is p=quarantine</td></tr>
+<tr><td><code>dmarc_policy_reject</code></td><td>bool</td><td>5</td><td>DMARC policy is p=reject</td></tr>
+<tr><td><code>dmarc_policy_code</code></td><td>number</td><td>5</td><td>DMARC policy numeric value: 0=none, 1=quarantine, 2=reject</td></tr>
+<tr><td><code>dmarc_spf_aligned</code></td><td>bool</td><td>5</td><td>SPF authentication domain aligns with the From domain (relaxed mode)</td></tr>
+<tr><td><code>dmarc_dkim_aligned</code></td><td>bool</td><td>5</td><td>DKIM signing domain aligns with the From domain (at least one signature aligned)</td></tr>
+<tr><td><code>dmarc_spf_domain_match</code></td><td>bool</td><td>5</td><td>Same as dmarc_spf_aligned, alias</td></tr>
+<tr><td><code>dmarc_dkim_domain_match</code></td><td>bool</td><td>5</td><td>Same as dmarc_dkim_aligned, alias</td></tr>
+<tr><td><code>dmarc_result</code></td><td>number</td><td>5</td><td>DMARC evaluation result: 0=None, 1=Pass, 2=Fail</td></tr>
+<tr><td><code>dmarc_pass</code></td><td>bool</td><td>5</td><td>DMARC verification passed (SPF or DKIM aligned)</td></tr>
+<tr><td><code>dmarc_fail</code></td><td>bool</td><td>5</td><td>DMARC verification failed (neither SPF nor DKIM aligned, policy is quarantine/reject)</td></tr>
+</tbody>
+</table>
+
+<h3>DKIM Verification</h3>
+<table>
+<thead>
+<tr><th>Feature Key</th><th>Type</th><th>Stage</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>dkim_result</code></td><td>number</td><td>5</td><td>DKIM overall result: 0=None, 1=Pass, 2=Fail, 3=TempError, 4=PermError</td></tr>
+<tr><td><code>dkim_pass</code></td><td>bool</td><td>5</td><td>At least one DKIM signature passed verification</td></tr>
+<tr><td><code>dkim_fail</code></td><td>bool</td><td>5</td><td>All DKIM signatures failed verification</td></tr>
+<tr><td><code>dkim_sig_count</code></td><td>number</td><td>5</td><td>Total number of DKIM-Signature headers</td></tr>
+<tr><td><code>dkim_pass_count</code></td><td>number</td><td>5</td><td>Number of DKIM signatures that passed verification</td></tr>
+<tr><td><code>dkim_fail_count</code></td><td>number</td><td>5</td><td>Number of DKIM signatures that failed verification</td></tr>
+<tr><td><code>dkim_verified_count</code></td><td>number</td><td>5</td><td>Same as dkim_pass_count, alias</td></tr>
+<tr><td><code>dkim_skipped</code></td><td>bool</td><td>5</td><td>DKIM verification skipped (no headers, no body, or empty context)</td></tr>
+</tbody>
+</table>
+
+<h2>Using Features in Filter Rules</h2>
+
+<p>On the "Filter Rules" page in the admin panel, when creating or editing a rule, the "Select Feature" dropdown in the condition editor includes all of the features listed above.</p>
+
+<p>Rule condition examples:</p>
+
+<pre># Reject emails that fail SPF verification
+condition: spf_fail == true
+action: reject
+
+# Mark as spam for emails from non-local contacts containing short links
+condition: rcpt_contact_sender_hit == false AND body_url_has_short == true
+action: spam
+
+# Directly reject high-frequency connections with no PTR record
+condition: ip_ptr_ok == false AND ip_connect_count_5m &gt; 50
+action: reject
+
+# Quarantine when DMARC fails and DKIM does not pass
+condition: dmarc_fail == true AND dkim_fail == true
+action: quarantine</pre>
+
+<p>Rules are evaluated in priority order; execution stops at the first match (first matching rule takes effect).</p>
+
+</main>
+</div>
+</body>
+</html>

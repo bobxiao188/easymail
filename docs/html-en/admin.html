@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel Guide — EasyMail Documentation</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrapper">
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <a href="index.html" class="logo">EasyMail</a>
+        <div class="logo-sub">Enterprise Mail Gateway</div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">Getting Started</div>
+        <a href="index.html">Product Overview</a>
+        <a href="setup.html">Installation & Deployment</a>
+        <a href="quickstart.html">Quick Start</a>
+
+        <div class="nav-section">Admin Panel</div>
+        <a href="admin.html" class="active">Admin Panel Guide</a>
+        <a href="postfix.html">Postfix Integration</a>
+
+        <div class="nav-section">User Guide</div>
+        <a href="clients.html">Client Configuration</a>
+        <a href="webmail.html">Webmail</a>
+
+        <div class="nav-section">Filter Reference</div>
+        <a href="features.html">Built-in Features</a>
+
+        <div class="nav-section">Operations</div>
+        <a href="monitor.html">Service Monitoring</a>
+        <a href="faq.html">FAQ</a>
+    </nav>
+</aside>
+
+<main class="content">
+
+<h1>Admin Panel Guide</h1>
+
+<p>The admin panel is the core operational interface of EasyMail, providing domain management, mailbox management, filter rules, classification models, delivery logs, and more. It listens on port <code>8000</code> by default.</p>
+
+<h2>Dashboard</h2>
+<p>The home page after login is the dashboard, which displays key operational information:</p>
+<ul>
+    <li><strong>Service Status</strong>: The running status and last heartbeat time of each component (Dovecot, LMTP, Milter, Admin, Webmail, IMAP, Classifier)</li>
+    <li><strong>Today's Mail Statistics</strong>: Total emails received, filtered count, rejected count, spam count</li>
+    <li><strong>Top Senders</strong>: Top 10 senders by volume today</li>
+    <li><strong>Recent Activity</strong>: Recent delivery records and system events</li>
+</ul>
+
+<h2>Domain Management</h2>
+
+<h3>Add Domain</h3>
+<p>Go to the <strong>Domain Management</strong> page and click "Add Domain". You need to fill in:</p>
+<ul>
+    <li><strong>Domain</strong>: The mail domain, e.g. <code>example.com</code></li>
+    <li><strong>Description</strong>: Remarks (optional)</li>
+</ul>
+<p>After adding, the system will create the domain's management record in MySQL and prepare the storage directory structure.</p>
+
+<h3>Domain Status</h3>
+<table>
+<thead>
+<tr><th>Status</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td>Enabled</td><td>The domain can receive mail normally</td></tr>
+<tr><td>Disabled</td><td>The domain is suspended from receiving mail; Postfix queries will return "not found"</td></tr>
+<tr><td>Deleted</td><td>Marked for deletion, resources are not immediately released</td></tr>
+</tbody>
+</table>
+
+<h3>DKIM Configuration</h3>
+<p>In the domain details, you can generate and manage DKIM key pairs. DKIM is used to sign outgoing emails, and recipients can verify the email's authenticity by querying the public key via DNS.</p>
+<ul>
+    <li>Click "Generate DKIM Key Pair"</li>
+    <li>The system generates an RSA public/private key pair, and the public key is displayed in DNS TXT record format</li>
+    <li>Add the TXT record to the domain's DNS: <code>default._domainkey.example.com TXT "v=DKIM1; k=rsa; p=public-key-content"</code></li>
+    <li>Enable DKIM signing on outbound emails in Postfix or EasyMail</li>
+</ul>
+
+<h3>Domain Operations</h3>
+<ul>
+    <li><strong>Purge</strong>: Delete all mail data for this domain (disk + SQLite index) — use with caution</li>
+    <li><strong>Enable/Disable</strong>: Toggle domain status; when disabled, all mailboxes under this domain cannot send or receive mail</li>
+</ul>
+
+<h2>Mailbox Management</h2>
+
+<h3>Add Mailbox</h3>
+<p>Go to the <strong>Mailbox Management</strong> page and click "Add Mailbox":</p>
+<ul>
+    <li><strong>Email Address</strong>: Full email address, e.g. <code>user@example.com</code></li>
+    <li><strong>Password</strong>: IMAP login password</li>
+    <li><strong>Domain</strong>: Select an already added domain</li>
+    <li><strong>Mailbox Capacity</strong>: Disk space limit (optional, 0 means unlimited)</li>
+</ul>
+
+<h3>Mailbox Status</h3>
+<table>
+<thead>
+<tr><th>Status</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td>Enabled</td><td>The mailbox can send and receive mail normally</td></tr>
+<tr><td>Disabled</td><td>The mailbox is suspended; IMAP login and mail delivery are both blocked</td></tr>
+</tbody>
+</table>
+
+<h3>Mailbox Operations</h3>
+<ul>
+    <li><strong>Change Password</strong>: Reset the mailbox login password</li>
+    <li><strong>Purge Mailbox</strong>: Delete all mail data under this mailbox</li>
+    <li><strong>Enable/Disable</strong>: Control the mailbox availability status</li>
+</ul>
+
+<h2>Filter Rule Management</h2>
+
+<h3>Filter Pipeline</h3>
+<p>EasyMail's anti-spam filtering integrates with Postfix via the Milter protocol, processing each inbound email in 6 stages:</p>
+<ol>
+    <li><strong>Connect Stage</strong>: Records the connecting IP and performs IP reputation checks</li>
+    <li><strong>Helo Stage</strong>: Validates the client HELO/EHLO hostname and checks reverse DNS</li>
+    <li><strong>MailFrom Stage</strong>: Validates the sender's domain and checks SPF records</li>
+    <li><strong>RcptTo Stage</strong>: Validates whether the recipient exists and checks against the contact list</li>
+    <li><strong>Headers Stage</strong>: Analyzes email headers (Received, DKIM-Signature, etc.), removes inbound EasyMail policy headers</li>
+    <li><strong>Body Stage</strong>: MIME parsing, text/HTML extraction, URL feature analysis, attachment risk assessment, ML classification inference, ClamAV virus scanning, rule engine final verdict</li>
+</ol>
+
+<h3>Filter Results</h3>
+<table>
+<thead>
+<tr><th>Result</th><th>Action</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td>accept</td><td>Deliver normally</td><td>Email goes to inbox</td></tr>
+<tr><td>spam</td><td>Mark as spam</td><td>Email delivered to spam folder</td></tr>
+<tr><td>quarantine</td><td>Quarantine</td><td>Email held in quarantine, pending manual review by administrator</td></tr>
+<tr><td>reject</td><td>SMTP reject</td><td>Returns a 5xx error code directly, email is not stored</td></tr>
+</tbody>
+</table>
+
+<h3>Create a Filter Rule</h3>
+<p>On the <strong>Filter Rules</strong> page, click "Add Rule":</p>
+<ul>
+    <li><strong>Name</strong>: A descriptive name for the rule</li>
+    <li><strong>Condition</strong>: Select a feature extractor and comparison condition. For example:
+        <ul>
+            <li>Connecting IP is in a known malicious IP list</li>
+            <li>HELO name does not match reverse DNS</li>
+            <li>Sender domain has no MX record</li>
+            <li>Email body contains specific keywords</li>
+            <li>URL links point to known malicious sites</li>
+            <li>Attachment type is a high-risk format</li>
+        </ul>
+    </li>
+    <li><strong>Action</strong>: The handling method when matched (Accept / Mark as Spam / Quarantine / Reject)</li>
+    <li><strong>Priority</strong>: Lower numbers mean higher priority; rules are evaluated in priority order</li>
+    <li><strong>Enabled Status</strong>: Allows temporarily disabling a rule</li>
+</ul>
+
+<h3>ML Classification Model</h3>
+<p>The <strong>Classification Model</strong> page manages the machine learning classification engine:</p>
+<ul>
+    <li><strong>Model Types</strong>: FastText (word-vector-based text classification), DistilBERT (Transformer-based deep classifier), XGBoost (pending implementation)</li>
+    <li><strong>Model Management</strong>: Import, export, train, and delete models</li>
+    <li><strong>Sample Management</strong>: Manage global training data on the <strong>Training Samples</strong> page for model training</li>
+    <li><strong>Training</strong>: Train the classification model using sample data; the model takes effect automatically after training</li>
+    <li><strong>Prediction</strong>: Predict against specified email content to verify model performance</li>
+</ul>
+
+<div class="callout callout-info">
+    <strong>Tip</strong> ML classification is optional. If no model is configured, the system will only use the rule engine for filtering.
+</div>
+
+<h2>Delivery Logs</h2>
+<p>The <strong>Delivery Logs</strong> page records the processing details of each email:</p>
+<ul>
+    <li>Sender, recipient</li>
+    <li>Email subject</li>
+    <li>Filtering time</li>
+    <li>Filter result (accept / spam / quarantine / reject)</li>
+    <li>Matched rules</li>
+    <li>Feature extraction snapshot</li>
+    <li>Delivery status</li>
+</ul>
+<p>Logs can be filtered by time range, sender, recipient, and filter result for easy troubleshooting.</p>
+
+<h2>Administrator Account</h2>
+<p>On the <strong>Profile</strong> page, you can manage the current admin account:</p>
+<ul>
+    <li>Change name and email</li>
+    <li>Change password</li>
+    <li>Switch interface language (supports Chinese/English)</li>
+    <li>Switch interface theme</li>
+</ul>
+
+<h2>Postfix Management Page</h2>
+<p>If Postfix Agent is deployed, the admin panel also provides the following Postfix management features:</p>
+<ul>
+    <li><strong>Service Status</strong>: View Postfix running status and configuration version</li>
+    <li><strong>Configuration Management</strong>: Remotely manage Postfix configuration parameters, supports configuration deployment and rollback</li>
+    <li><strong>Agent Management</strong>: Manage Postfix Agent servers</li>
+    <li><strong>Queue Management</strong>: View the Postfix mail queue</li>
+</ul>
+<p>For more details, please refer to <a href="postfix.html">Postfix Integration</a>.</p>
+
+</main>
+</div>
+</body>
+</html>

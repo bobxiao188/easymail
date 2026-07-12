@@ -1,0 +1,380 @@
+/* ============================================================
+   EasyMail Documentation Styles
+   Target: terminal users, administrator workflow guidance
+   ============================================================ */
+
+:root {
+    --primary: #2b5f8a;
+    --primary-light: #3a7bb5;
+    --primary-dark: #1d3f5e;
+    --accent: #e67e22;
+    --text: #2c3e50;
+    --text-light: #6c7a89;
+    --bg: #f8f9fa;
+    --bg-sidebar: #1d3f5e;
+    --bg-card: #ffffff;
+    --border: #dee2e6;
+    --code-bg: #f0f2f4;
+    --warn-bg: #fff8e1;
+    --warn-border: #ffd54f;
+    --info-bg: #e3f2fd;
+    --info-border: #90caf9;
+    --success-bg: #e8f5e9;
+    --success-border: #a5d6a7;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text);
+    background: var(--bg);
+}
+
+/* ---------- Layout ---------- */
+.wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* ---------- Sidebar ---------- */
+.sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    background: var(--bg-sidebar);
+    color: #e0e8f0;
+    padding: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+.sidebar-header {
+    padding: 24px 20px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar-header .logo {
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    text-decoration: none;
+    display: block;
+}
+
+.sidebar-header .logo-sub {
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    margin-top: 2px;
+}
+
+.sidebar-nav {
+    padding: 12px 0;
+}
+
+.sidebar-nav .nav-section {
+    padding: 16px 20px 4px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,0.35);
+    font-weight: 600;
+}
+
+.sidebar-nav a {
+    display: block;
+    padding: 8px 20px 8px 24px;
+    color: rgba(255,255,255,0.75);
+    text-decoration: none;
+    font-size: 14px;
+    border-left: 3px solid transparent;
+    transition: all 0.15s ease;
+}
+
+.sidebar-nav a:hover {
+    color: #fff;
+    background: rgba(255,255,255,0.08);
+    border-left-color: var(--accent);
+}
+
+.sidebar-nav a.active {
+    color: #fff;
+    background: rgba(255,255,255,0.1);
+    border-left-color: var(--accent);
+    font-weight: 600;
+}
+
+/* ---------- Main Content ---------- */
+.content {
+    flex: 1;
+    min-width: 0;
+    max-width: 960px;
+    padding: 40px 48px 80px;
+}
+
+.content h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary-dark);
+    margin: 0 0 8px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--border);
+}
+
+.content h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--primary);
+    margin: 36px 0 12px;
+    padding-bottom: 6px;
+}
+
+.content h3 {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 28px 0 10px;
+}
+
+.content h4 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 20px 0 8px;
+}
+
+.content p {
+    margin: 0 0 14px;
+}
+
+.content ul, .content ol {
+    margin: 0 0 16px 20px;
+}
+
+.content li {
+    margin-bottom: 6px;
+}
+
+.content a {
+    color: var(--primary-light);
+    text-decoration: none;
+}
+
+.content a:hover {
+    text-decoration: underline;
+}
+
+/* ---------- Code ---------- */
+.content code {
+    font-family: "SF Mono", Monaco, "Cascadia Code", Consolas, monospace;
+    font-size: 13px;
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: #1a1a2e;
+}
+
+.content pre {
+    background: #1e1e2e;
+    color: #cdd6f4;
+    padding: 16px 20px;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 0 0 16px;
+    font-family: "SF Mono", Monaco, "Cascadia Code", Consolas, monospace;
+}
+
+.content pre code {
+    background: none;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+}
+
+/* ---------- Callouts ---------- */
+.callout {
+    padding: 12px 16px;
+    border-radius: 6px;
+    margin: 0 0 16px;
+    border-left: 4px solid;
+    font-size: 14px;
+}
+
+.callout-info {
+    background: var(--info-bg);
+    border-color: var(--info-border);
+}
+
+.callout-warning {
+    background: var(--warn-bg);
+    border-color: var(--warn-border);
+}
+
+.callout-success {
+    background: var(--success-bg);
+    border-color: var(--success-border);
+}
+
+.callout strong {
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+}
+
+/* ---------- Tables ---------- */
+.content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 20px;
+    font-size: 14px;
+}
+
+.content th {
+    background: var(--primary);
+    color: #fff;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+}
+
+.content td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+}
+
+.content tr:nth-child(even) td {
+    background: #f8f9fa;
+}
+
+.content tr:hover td {
+    background: #eef5fb;
+}
+
+/* ---------- Steps / Procedures ---------- */
+.step {
+    margin: 0 0 24px;
+    padding: 16px 20px 16px 52px;
+    background: var(--bg-card);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    position: relative;
+}
+
+.step .step-num {
+    position: absolute;
+    left: 16px;
+    top: 16px;
+    width: 26px;
+    height: 26px;
+    background: var(--primary);
+    color: #fff;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 26px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.step h3 {
+    margin: 0 0 6px;
+    font-size: 15px;
+}
+
+.step p, .step pre, .step ul {
+    margin: 0 0 8px;
+}
+
+.step :last-child {
+    margin-bottom: 0;
+}
+
+/* ---------- Hero section on home page ---------- */
+.hero {
+    text-align: center;
+    padding: 32px 0 24px;
+    margin-bottom: 32px;
+}
+
+.hero h1 {
+    border: none;
+    font-size: 32px;
+    margin-bottom: 12px;
+}
+
+.hero p {
+    font-size: 16px;
+    color: var(--text-light);
+    max-width: 600px;
+    margin: 0 auto 20px;
+}
+
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin: 24px 0;
+}
+
+.feature-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    text-decoration: none;
+    color: var(--text);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    display: block;
+}
+
+.feature-card:hover {
+    border-color: var(--primary-light);
+    box-shadow: 0 2px 12px rgba(43,95,138,0.12);
+}
+
+.feature-card h3 {
+    font-size: 15px;
+    margin: 0 0 6px;
+    color: var(--primary);
+}
+
+.feature-card p {
+    font-size: 13px;
+    color: var(--text-light);
+    margin: 0;
+}
+
+/* ---------- Key-value list ---------- */
+.kv-list {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 16px;
+    margin: 0 0 16px;
+    font-size: 14px;
+}
+
+.kv-list dt {
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--primary-dark);
+}
+
+.kv-list dd {
+    margin: 0;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+    .wrapper { flex-direction: column; }
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: static;
+    }
+    .content { padding: 24px 20px 60px; }
+    .feature-grid { grid-template-columns: 1fr; }
+}

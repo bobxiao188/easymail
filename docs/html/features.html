@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>内置特征列表 — EasyMail 文档</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrapper">
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <a href="index.html" class="logo">EasyMail</a>
+        <div class="logo-sub">企业邮件网关</div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">入门</div>
+        <a href="index.html">产品概述</a>
+        <a href="setup.html">安装部署</a>
+        <a href="quickstart.html">快速入门</a>
+
+        <div class="nav-section">管理后台</div>
+        <a href="admin.html">后台功能指南</a>
+        <a href="postfix.html">Postfix 集成</a>
+
+        <div class="nav-section">使用指南</div>
+        <a href="clients.html">客户端配置</a>
+        <a href="webmail.html">Webmail</a>
+
+        <div class="nav-section">过滤参考</div>
+        <a href="features.html" class="active">内置特征列表</a>
+
+        <div class="nav-section">运维</div>
+        <a href="monitor.html">服务监控</a>
+        <a href="faq.html">常见问题</a>
+    </nav>
+</aside>
+
+<main class="content">
+
+<h1>内置特征列表</h1>
+
+<p>EasyMail 过滤引擎提供以下内置特征，可在过滤规则的条件表达式中直接引用。特征按功能分类组织，每个特征标注了数据类型、所属处理阶段和简要说明。</p>
+
+<div class="callout callout-info">
+    <strong>说明</strong> 下表中的"阶段"对应 SMTP 处理流水线：0=连接建立, 1=HELO, 2=发件人, 3=收件人, 4=邮件头, 5=正文。同一分类下的特征可能分布在多个阶段中。
+</div>
+
+<h2>一、连接信誉</h2>
+
+<p>在 SMTP 连接建立阶段采集，评估客户端的网络身份和信誉。</p>
+
+<h3>反向 DNS（rDNS）</h3>
+<table>
+<thead>
+<tr><th>特征键名</th><th>类型</th><th>阶段</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>ip_ptr_ok</code></td><td>bool</td><td>0</td><td>连接 IP 至少有一条 PTR 反向解析记录</td></tr>
+<tr><td><code>ip_ptr_count</code></td><td>number</td><td>0</td><td>PTR 记录数量</td></tr>
+<tr><td><code>ip_ptr_has_dot</code></td><td>bool</td><td>0</td><td>PTR 主机名中包含点号（完整域名检查）</td></tr>
+</tbody>
+</table>
+
+<h3>正向确认反向 DNS（FCrDNS）</h3>
+<table>
+<thead>
+<tr><th>特征键名</th><th>类型</th><th>阶段</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>ip_fcrdns_ok</code></td><td>bool</td><td>0</td><td>FCrDNS 验证通过：PTR 名称的 A/AAAA 查询包含原始连接 IP</td></tr>
+<tr><td><code>ip_ptr_forward_match_count</code></td><td>number</td><td>0</td><td>前 3 条 PTR 中正向解析回原始 IP 的数量</td></tr>
+</tbody>
+</table>
+
+<h3>IP 连接统计</h3>
+<table>
+<thead>
+<tr><th>特征键名</th><th>类型</th><th>阶段</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>ip_connect_count_1d</code></td><td>number</td><td>0</td><td>该 IP 本日历日连接次数（Redis TTL 24h）</td></tr>
+<tr><td><code>ip_connect_count_5m</code></td><td>number</td><td>0</td><td>该 IP 滑动 5 分钟窗口连接次数</td></tr>
+<tr><td><code>ip_connect_rate_1d</code></td><td>number</td><td>0</td><td>本日连接频率（次数 / 自午夜秒数）</td></tr>
+<tr><td><code>ip_connect_rate_5m</code></td><td>number</td><td>0</td><td>5 分钟连接频率（次数 / 300 秒）</td></tr>
+</tbody>
+</table>
+
+<h3>IP 结果统计</h3>
+<table>
+<thead>
+<tr><th>特征键名</th><th>类型</th><th>阶段</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>ip_outcome_accept_1d</code></td><td>number</td><td>0</td><td>该 IP 今日投递次数</td></tr>
+<tr><td><code>ip_outcome_reject_1d</code></td><td>number</td><td>0</td><td>该 IP 今日拒绝次数</td></tr>
+<tr><td><code>ip_outcome_spam_1d</code></td><td>number</td><td>0</td><td>该 IP 今日标记垃圾次数</td></tr>
+<tr><td><code>ip_outcome_quarantine_1d</code></td><td>number</td><td>0</td><td>该 IP 今日隔离次数</td></tr>
+<tr><td><code>ip_outcome_total_1d</code></td><td>number</td><td>0</td><td>该 IP 今日总处理次数</td></tr>
+<tr><td><code>ip_reject_rate_1d</code></td><td>number</td><td>0</td><td>该 IP 今日拒绝率</td></tr>
+<tr><td><code>ip_reject_rate_5m</code></td><td>number</td><td>0</td><td>该 IP 滑动 5 分钟拒绝率</td></tr>
+</tbody>
+</table>
+
+<h2>二、HELO 检查</h2>
+
+<p>在 SMTP HELO/EHLO 阶段采集，验证客户端声明的身份标识。</p>
+
+<table>
+<thead>
+<tr><th>特征键名</th><th>类型</th><th>阶段</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>helo_present</code></td><td>bool</td><td>1</td><td>客户端是否发送了非空的 HELO/EHLO 主机名</td></tr>
+<tr><td><code>helo_rdns_match</code></td><td>bool</td><td>1</td><td>HELO 主机名与任意 PTR 记录匹配（相等或子域匹配）</td></tr>
+<tr><td><code>helo_rdns_name_count</code></td><td>number</td><td>1</td><td>用于 HELO 比较的 PTR 记录数（最多 3 条）</td></tr>
+</tbody>
+</table>
+
+<h2>三、发件人验证</h2>
+
+<p>在 MAIL FROM 阶段采集，验证发件人域名的 DNS 基础设施和发送者统计。</p>
+
+<h3>发件人域名 DNS</h3>
+<table>
+<thead>
+<tr><th>特征键名</th><th>类型</th><th>阶段</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>sender_domain_has_mx</code></td><td>bool</td><td>2</td><td>发件人域名有 MX 记录</td></tr>
+<tr><td><code>sender_domain_has_a</code></td><td>bool</td><td>2</td><td>发件人域名有 A/AAAA 记录</td></tr>
+<tr><td><code>sender_domain_mx_count</code></td><td>number</td><td>2</td><td>MX 记录数量</td></tr>
+<tr><td><code>sender_domain_mx_pref_min</code></td><td>number</td><td>2</td><td>最低（最佳）MX 优先级值</td></tr>
+<tr><td><code>sender_domain_mx_is_null</code></td><td>bool</td><td>2</td><td>是否存在空 MX（"."表示该域不接受邮件，RFC 7505）</td></tr>
+<tr><td><code>sender_domain_a_count</code></td><td>number</td><td>2</td><td>A/AAAA 记录数量</td></tr>
+</tbody>
+</table>
+
+<h3>SPF 验证</h3>
+<table>
+<thead>
+<tr><th>特征键名</th><th>类型</th><th>阶段</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>spf_result</code></td><td>number</td><td>2</td><td>SPF 结果数值：0=None, 1=Neutral, 2=Pass, 3=SoftFail, 4=Fail, 5=TempError, 6=PermError</td></tr>
+<tr><td><code>spf_pass</code></td><td>bool</td><td>2</td><td>SPF 验证通过</td></tr>
+<tr><td><code>spf_fail</code></td><td>bool</td><td>2</td><td>SPF 验证失败（Fail 或 SoftFail）</td></tr>
+<tr><td><code>spf_softfail</code></td><td>bool</td><td>2</td><td>SPF SoftFail</td></tr>
+<tr><td><code>spf_neutral</code></td><td>bool</td><td>2</td><td>SPF Neutral</td></tr>
+<tr><td><code>spf_none</code></td><td>bool</td><td>2</td><td>未找到 SPF 记录</td></tr>
+<tr><td><code>spf_error</code></td><td>bool</td><td>2</td><td>SPF 临时错误或永久错误</td></tr>
+<tr><td><code>spf_skipped</code></td><td>bool</td><td>2</td><td>SPF 检查被跳过（无连接 IP、发送者或 DNS 解析器）</td></tr>
+</tbody>
+</table>
+
+<h3>发件人统计</h3>
+<table>
+<thead>
+<tr><th>特征键名</th><th>类型</th><th>阶段</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>sender_mailfrom_count_1d</code></td><td>number</td><td>2</td><td>该发件人本日 MAIL FROM 事件数</td></tr>
+<tr><td><code>sender_mailfrom_count_5m</code></td><td>number</td><td>2</td><td>该发件人滑动 5 分钟 MAIL FROM 事件数</td></tr>
+<tr><td><code>sender_outcome_accept_1d</code></td><td>number</td><td>2</td><td>该发件人今日投递次数</td></tr>
+<tr><td><code>sender_outcome_reject_1d</code></td><td>number</td><td>2</td><td>该发件人今日拒绝次数</td></tr>
+<tr><td><code>sender_outcome_spam_1d</code></td><td>number</td><td>2</td><td>该发件人今日标记垃圾次数</td></tr>
+<tr><td><code>sender_outcome_quarantine_1d</code></td><td>number</td><td>2</td><td>该发件人今日隔离次数</td></tr>
+<tr><td><code>sender_outcome_total_1d</code></td><td>number</td><td>2</td><td>该发件人今日总处理次数</td></tr>
+<tr><td><code>sender_reject_rate_1d</code></td><td>number</td><td>2</td><td>该发件人今日拒绝率</td></tr>
+</tbody>
+</table>
+
+<h2>四、收件人检查</h2>
+
+<p>在 RCPT TO 阶段采集，验证收件人的合法性和发件人→收件人的关系。</p>
+
+<h3>收件人基本信息</h3>
+<table>
+<thead>
+<tr><th>特征键名</th><th>类型</th><th>阶段</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>rcpt_count</code></td><td>number</td><td>3</td><td>该邮件的 RCPT TO 收件人数量</td></tr>
+<tr><td><code>sender_has_mailfrom</code></td><td>bool</td><td>3</td><td>MAIL FROM 地址是否非空</td></tr>
+<tr><td><code>sender_rcpt_count</code></td><td>number</td><td>3</td><td>同 <code>rcpt_count</code>，发件人命名空间下的别名</td></tr>
+<tr><td><code>rcpt_domain_present</code></td><td>bool</td><td>3</td><td>收件人地址是否包含域名部分</td></tr>
+</tbody>
+</table>
+
+<h3>发件人→收件人域名统计</h3>
+<table>
+<thead>
+<tr><th>特征键名</th><th>类型</th><th>阶段</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>sender_rcpt_domain_count_1d</code></td><td>number</td><td>3</td><td>该发件人→收件人域名今日事件数</td></tr>
+<tr><td><code>sender_rcpt_domain_count_5m</code></td><td>number</td><td>3</td><td>该发件人→收件人域名滑动 5 分钟事件数</td></tr>
+<tr><td><code>sender_rcpt_domain_accept_1d</code></td><td>number</td><td>3</td><td>该(发件人,收件人域名)今日投递次数</td></tr>
+<tr><td><code>sender_rcpt_domain_reject_1d</code></td><td>number</td><td>3</td><td>该(发件人,收件人域名)今日拒绝次数</td></tr>
+<tr><td><code>sender_rcpt_domain_spam_1d</code></td><td>number</td><td>3</td><td>该(发件人,收件人域名)今日垃圾次数</td></tr>
+<tr><td><code>sender_rcpt_domain_quarantine_1d</code></td><td>number</td><td>3</td><td>该(发件人,收件人域名)今日隔离次数</td></tr>
+<tr><td><code>sender_rcpt_domain_total_1d</code></td><td>number</td><td>3</td><td>该(发件人,收件人域名)今日总次数</td></tr>
+<tr><td><code>sender_rcpt_domain_reject_rate_1d</code></td><td>number</td><td>3</td><td>该(发件人,收件人域名)今日拒绝率</td></tr>
+</tbody>
+</table>
+
+<h3>本地验证与联系人</h3>
+<table>
+<thead>
+<tr><th>特征键名</th><th>类型</th><th>阶段</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>rcpt_domain_is_local</code></td><td>bool</td><td>3</td><td>收件人域名是否为本地管理的域名</td></tr>
+<tr><td><code>rcpt_mailbox_exists</code></td><td>bool</td><td>3</td><td>收件人邮箱是否存在且启用</td></tr>
+<tr><td><code>rcpt_contact_sender_hit</code></td><td>bool</td><td>3</td><td>发件人是否存在于收件人的通讯录中</td></tr>
+</tbody>
+</table>
+
+<h2>五、邮件头分析</h2>
+
+<p>在 Headers 阶段采集，分析邮件头部结构的整体特征。</p>
+
+<table>
+<thead>
+<tr><th>特征键名</th><th>类型</th><th>阶段</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>header_fields</code></td><td>number</td><td>4</td><td>MIME 头部字段总数</td></tr>
+</tbody>
+</table>
+
+<h2>六、正文深度分析</h2>
+
+<p>在 Body 阶段采集，对邮件正文、附件、URL、认证结果进行全面分析。</p>
+
+<h3>邮件结构</h3>
+<table>
+<thead>
+<tr><th>特征键名</th><th>类型</th><th>阶段</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>body_bytes</code></td><td>number</td><td>5</td><td>邮件正文原始字节数</td></tr>
+<tr><td><code>body_bytes_partial</code></td><td>number</td><td>5</td><td>Milter 累积正文分片字节数（早期部分检查用）</td></tr>
+<tr><td><code>subject_len</code></td><td>number</td><td>5</td><td>邮件主题解码后的 Unicode 字符长度</td></tr>
+<tr><td><code>has_list_unsubscribe</code></td><td>bool</td><td>5</td><td>是否包含 List-Unsubscribe 头部</td></tr>
+<tr><td><code>mime_part_count</code></td><td>number</td><td>5</td><td>MIME 结构节点数（由 enmime 解析器识别）</td></tr>
+<tr><td><code>attachment_count</code></td><td>number</td><td>5</td><td>附件数量</td></tr>
+</tbody>
+</table>
+
+<h3>URL 分析</h3>
+<table>
+<thead>
+<tr><th>特征键名</th><th>类型</th><th>阶段</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>body_url_count</code></td><td>number</td><td>5</td><td>HTML 和文本正文中提取的 http/https URL 总数</td></tr>
+<tr><td><code>body_url_has_http</code></td><td>bool</td><td>5</td><td>至少有一个 http:// URL</td></tr>
+<tr><td><code>body_url_has_https</code></td><td>bool</td><td>5</td><td>至少有一个 https:// URL</td></tr>
+<tr><td><code>body_url_short_count</code></td><td>number</td><td>5</td><td>短链接/跳转型 URL 数量</td></tr>
+<tr><td><code>body_url_has_short</code></td><td>bool</td><td>5</td><td>正文中是否包含短链接模式 URL</td></tr>
+</tbody>
+</table>
+
+<h3>附件风险</h3>
+<table>
+<thead>
+<tr><th>特征键名</th><th>类型</th><th>阶段</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>attachment_risky_ext_count</code></td><td>number</td><td>5</td><td>高风险扩展名附件数量（exe, dll, scr, bat, cmd, ps1, vbs, js, jar, lnk, iso, hta, msi, reg, wsf）</td></tr>
+<tr><td><code>attachment_risky_ext_ratio</code></td><td>number</td><td>5</td><td>高风险附件占比（0.0–1.0）</td></tr>
+<tr><td><code>attachment_name_double_ext_cnt</code></td><td>number</td><td>5</td><td>文件名含双扩展名的附件数量（如 invoice.pdf.exe）</td></tr>
+</tbody>
+</table>
+
+<h3>病毒扫描</h3>
+<table>
+<thead>
+<tr><th>特征键名</th><th>类型</th><th>阶段</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>antivirus_hit</code></td><td>number</td><td>5</td><td>ClamAV 检测为恶意：>0 表示检出数，-1 表示扫描失败</td></tr>
+</tbody>
+</table>
+
+<h3>DMARC 验证</h3>
+<table>
+<thead>
+<tr><th>特征键名</th><th>类型</th><th>阶段</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>dmarc_has_policy</code></td><td>bool</td><td>5</td><td>From 域名存在可解析的 DMARC 策略记录</td></tr>
+<tr><td><code>dmarc_policy_none</code></td><td>bool</td><td>5</td><td>DMARC 策略为 p=none（不强制执行）</td></tr>
+<tr><td><code>dmarc_policy_quarantine</code></td><td>bool</td><td>5</td><td>DMARC 策略为 p=quarantine（隔离）</td></tr>
+<tr><td><code>dmarc_policy_reject</code></td><td>bool</td><td>5</td><td>DMARC 策略为 p=reject（拒绝）</td></tr>
+<tr><td><code>dmarc_policy_code</code></td><td>number</td><td>5</td><td>DMARC 策略数值：0=none, 1=quarantine, 2=reject</td></tr>
+<tr><td><code>dmarc_spf_aligned</code></td><td>bool</td><td>5</td><td>SPF 认证域名与 From 域名对齐（宽松模式）</td></tr>
+<tr><td><code>dmarc_dkim_aligned</code></td><td>bool</td><td>5</td><td>DKIM 签名域名与 From 域名对齐（至少一个签名对齐）</td></tr>
+<tr><td><code>dmarc_spf_domain_match</code></td><td>bool</td><td>5</td><td>同 dmarc_spf_aligned，别名</td></tr>
+<tr><td><code>dmarc_dkim_domain_match</code></td><td>bool</td><td>5</td><td>同 dmarc_dkim_aligned，别名</td></tr>
+<tr><td><code>dmarc_result</code></td><td>number</td><td>5</td><td>DMARC 评估结果：0=None, 1=Pass, 2=Fail</td></tr>
+<tr><td><code>dmarc_pass</code></td><td>bool</td><td>5</td><td>DMARC 验证通过（SPF 或 DKIM 对齐）</td></tr>
+<tr><td><code>dmarc_fail</code></td><td>bool</td><td>5</td><td>DMARC 验证失败（SPF 和 DKIM 均未对齐，策略为 quarantine/reject）</td></tr>
+</tbody>
+</table>
+
+<h3>DKIM 验证</h3>
+<table>
+<thead>
+<tr><th>特征键名</th><th>类型</th><th>阶段</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><code>dkim_result</code></td><td>number</td><td>5</td><td>DKIM 总体结果：0=None, 1=Pass, 2=Fail, 3=TempError, 4=PermError</td></tr>
+<tr><td><code>dkim_pass</code></td><td>bool</td><td>5</td><td>至少一条 DKIM 签名验证通过</td></tr>
+<tr><td><code>dkim_fail</code></td><td>bool</td><td>5</td><td>所有 DKIM 签名均未通过验证</td></tr>
+<tr><td><code>dkim_sig_count</code></td><td>number</td><td>5</td><td>DKIM-Signature 头部总数</td></tr>
+<tr><td><code>dkim_pass_count</code></td><td>number</td><td>5</td><td>验证通过的 DKIM 签名数量</td></tr>
+<tr><td><code>dkim_fail_count</code></td><td>number</td><td>5</td><td>验证失败的 DKIM 签名数量</td></tr>
+<tr><td><code>dkim_verified_count</code></td><td>number</td><td>5</td><td>同 dkim_pass_count，别名</td></tr>
+<tr><td><code>dkim_skipped</code></td><td>bool</td><td>5</td><td>DKIM 验证被跳过（无头部、无正文或上下文为空）</td></tr>
+</tbody>
+</table>
+
+<h2>特征在过滤规则中的使用</h2>
+
+<p>在管理后台的【过滤规则】页面，创建或编辑规则时，条件编辑器中的"选择特征"下拉列表包含了以上所有特征。</p>
+
+<p>规则条件示例：</p>
+
+<pre># 拒绝 SPF 验证失败的邮件
+条件：spf_fail == true
+动作：reject
+
+# 对来自非本地联系人且包含短链接的邮件标记垃圾
+条件：rcpt_contact_sender_hit == false AND body_url_has_short == true
+动作：spam
+
+# 对高频连接且无 PTR 的 IP 直接拒绝
+条件：ip_ptr_ok == false AND ip_connect_count_5m > 50
+动作：reject
+
+# DMARC 失败且 DKIM 未通过时隔离
+条件：dmarc_fail == true AND dkim_fail == true
+动作：quarantine</pre>
+
+<p>规则按优先级顺序评估，匹配即终止（首条匹配规则生效）。</p>
+
+</main>
+</div>
+</body>
+</html>

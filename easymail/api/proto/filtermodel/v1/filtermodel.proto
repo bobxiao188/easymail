@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package easymail.filtermodel.v1;
+
+option go_package = "easymail/internal/api/filtermodel/v1;filtermodelv1";
+
+// Classify-model gRPC API (generated Go lives under internal/api/filtermodel/v1).
+service FilterModelService {
+  rpc Infer(InferRequest) returns (InferResponse);
+}
+
+message InferRequest {
+  string text = 1;
+  // BCP-47 or ISO-639 codes the client collected from the message (e.g. "en", "zh").
+  repeated string language_codes = 2;
+}
+
+message LabelProbability {
+  string label = 1;
+  double probability = 2;
+}
+
+message ModelPrediction {
+  string model_id = 1;
+  string model_name = 2;
+  string label = 3;
+  double probability = 4;
+  // Non-empty if this model failed; others may still succeed.
+  string error = 5;
+  // Required on success: full class distribution (model-defined label order).
+  repeated LabelProbability label_probabilities = 6;
+}
+
+message InferResponse {
+  repeated ModelPrediction predictions = 1;
+}

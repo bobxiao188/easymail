@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EasyMail — 企业邮件网关文档</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrapper">
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <a href="index.html" class="logo">EasyMail</a>
+        <div class="logo-sub">企业邮件网关</div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">入门</div>
+        <a href="index.html" class="active">产品概述</a>
+        <a href="setup.html">安装部署</a>
+        <a href="quickstart.html">快速入门</a>
+
+        <div class="nav-section">管理后台</div>
+        <a href="admin.html">后台功能指南</a>
+        <a href="postfix.html">Postfix 集成</a>
+
+        <div class="nav-section">使用指南</div>
+        <a href="clients.html">客户端配置</a>
+        <a href="webmail.html">Webmail</a>
+
+        <div class="nav-section">过滤参考</div>
+        <a href="features.html">内置特征列表</a>
+
+        <div class="nav-section">运维</div>
+        <a href="monitor.html">服务监控</a>
+        <a href="faq.html">常见问题</a>
+    </nav>
+</aside>
+
+<main class="content">
+
+<div class="hero">
+    <h1>EasyMail 企业邮件网关</h1>
+    <p>开源、自托管的邮件安全网关。在 Postfix 前方提供反垃圾过滤、病毒扫描、ML 分类和管理后台，通过 LMTP 完成高效投递。</p>
+</div>
+
+<h2>核心特性</h2>
+
+<div class="feature-grid">
+
+<a href="admin.html" class="feature-card">
+    <h3>管理后台</h3>
+    <p>域名管理、邮箱账户管理、过滤规则、分类模型、投递日志，所有操作在一个 Web 界面完成。</p>
+</a>
+
+<a href="postfix.html" class="feature-card">
+    <h3>反垃圾过滤</h3>
+    <p>Milter 协议对接 Postfix，六阶段过滤管线：连接分析、HELO 检查、发件人验证、收件人匹配、头部分析、正文深度检测。</p>
+</a>
+
+<a href="quickstart.html#step3" class="feature-card">
+    <h3>ML 分类引擎</h3>
+    <p>内置 FastText / DistilBERT 分类器，支持 ONNX Runtime 推理，可自定义训练样本和模型。</p>
+</a>
+
+<a href="clamav.html" class="feature-card">
+    <h3>病毒扫描</h3>
+    <p>集成 ClamAV 防病毒引擎，对邮件附件进行实时扫描，支持连接池和熔断保护。</p>
+</a>
+
+<a href="clients.html" class="feature-card">
+    <h3>IMAP4rev1 服务</h3>
+    <p>完整 IMAP 协议支持，兼容 Foxmail、Outlook、Thunderbird 等主流客户端。支持 IDLE 推送，邮件实时到达。</p>
+</a>
+
+<a href="webmail.html" class="feature-card">
+    <h3>Webmail</h3>
+    <p>浏览器端收发邮件，支持多标签管理、联系人、附件预览、邮件搜索。</p>
+</a>
+
+<a href="monitor.html" class="feature-card">
+    <h3>服务监控</h3>
+    <p>心跳机制自动检测各服务状态，控制面板可视化展示邮件流量、热门发件人、系统健康度。</p>
+</a>
+
+<a href="quickstart.html" class="feature-card">
+    <h3>快速上手</h3>
+    <p>从部署到第一封邮件送达，全程约 30 分钟。清晰的业务流引导：域名 → 邮箱 → Postfix → 验证。</p>
+</a>
+
+</div>
+
+<h2>系统架构</h2>
+
+<p>EasyMail 不处理 SMTP 入站，依赖 Postfix 作为边缘 MTA。整体架构如下：</p>
+
+<pre>
+外部邮件 ──→ Postfix (SMTP)
+                │
+                ├── Milter (10026) ──→ 反垃圾过滤管线
+                │                        ├── 连接 / HELO / 发件人 / 收件人检查
+                │                        ├── 头部 / 正文深度分析
+                │                        ├── ML 分类模型推理
+                │                        └── ClamAV 病毒扫描
+                │
+                └── LMTP (10027) ──→ EasyMail 存储
+                                        ├── MySQL（管理数据）
+                                        ├── Redis（缓存 + 统计）
+                                        ├── SQLite（每用户邮件索引）
+                                        └── 磁盘（原始邮件 .eml 文件）
+                                        │
+                                        ├── IMAP (143/993)    ← 客户端收信
+                                        ├── Webmail (8080)    ← 浏览器访问
+                                        └── Dovecot (10025)   ← Postfix SASL 认证</pre>
+
+<h2>组件概览</h2>
+
+<table>
+<thead>
+<tr><th>组件</th><th>协议 / 端口</th><th>功能</th></tr>
+</thead>
+<tbody>
+<tr><td>Milter</td><td>TCP 10026</td><td>与 Postfix 对接的反垃圾过滤管道</td></tr>
+<tr><td>LMTP</td><td>TCP 10027</td><td>接收 Postfix 投递的邮件，解析 MIME、写入索引和磁盘</td></tr>
+<tr><td>IMAP</td><td>143 / 993</td><td>邮件客户端收发访问</td></tr>
+<tr><td>Admin API</td><td>8000</td><td>管理后台 HTTP API + 静态 SPA</td></tr>
+<tr><td>Webmail API</td><td>8080</td><td>浏览器 Webmail HTTP API + 静态 SPA</td></tr>
+<tr><td>Dovecot</td><td>10025</td><td>Postfix SASL 认证代理（不是真正的 Dovecot）</td></tr>
+<tr><td>Classifier</td><td>gRPC</td><td>ML 分类推理服务</td></tr>
+</tbody>
+</table>
+
+<h2>存储模型</h2>
+
+<table>
+<thead>
+<tr><th>存储</th><th>用途</th><th>是否必需</th></tr>
+</thead>
+<tbody>
+<tr><td>MySQL</td><td>域名、邮箱账户、过滤规则、分类模型、管理员账号、投递日志</td><td>是</td></tr>
+<tr><td>Redis</td><td>缓存域名/用户/管理员记录、过滤滑动窗口统计</td><td>推荐</td></tr>
+<tr><td>磁盘</td><td>原始邮件 .eml 文件（按域/用户/分片存储）</td><td>是</td></tr>
+<tr><td>SQLite</td><td>每用户邮件索引（路径：存储目录/域/用户/user.db）</td><td>自动</td></tr>
+</tbody>
+</table>
+
+<h2>后续步骤</h2>
+
+<ul>
+    <li><a href="setup.html">查看安装部署文档</a> — 环境准备、配置文件、启动服务</li>
+    <li><a href="quickstart.html">快速入门</a> — 30 分钟完成从部署到收发邮件</li>
+    <li><a href="admin.html">管理后台指南</a> — 域名、邮箱、过滤规则配置</li>
+    <li><a href="postfix.html">Postfix 集成</a> — Postfix 配置详解</li>
+</ul>
+
+</main>
+</div>
+</body>
+</html>

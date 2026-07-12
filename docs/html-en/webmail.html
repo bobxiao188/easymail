@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webmail User Guide — EasyMail Documentation</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrapper">
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <a href="index.html" class="logo">EasyMail</a>
+        <div class="logo-sub">Enterprise Mail Gateway</div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">Getting Started</div>
+        <a href="index.html">Product Overview</a>
+        <a href="setup.html">Installation &amp; Deployment</a>
+        <a href="quickstart.html">Quick Start</a>
+
+        <div class="nav-section">Admin Panel</div>
+        <a href="admin.html">Admin Panel Guide</a>
+        <a href="postfix.html">Postfix Integration</a>
+
+        <div class="nav-section">User Guide</div>
+        <a href="clients.html">Client Configuration</a>
+        <a href="webmail.html" class="active">Webmail</a>
+
+        <div class="nav-section">Filter Reference</div>
+        <a href="features.html">Built-in Features List</a>
+
+        <div class="nav-section">Operations</div>
+        <a href="monitor.html">Service Monitoring</a>
+        <a href="faq.html">FAQ</a>
+    </nav>
+</aside>
+
+<main class="content">
+
+<h1>Webmail User Guide</h1>
+
+<p>EasyMail provides a browser-based Webmail client. Visit <code>http://ServerIP:8080</code> and log in with your full email address and password.</p>
+
+<h2>Login</h2>
+<p>On the login page, enter:</p>
+<ul>
+    <li><strong>Email Address</strong>: Full email address, e.g. <code>user@example.com</code></li>
+    <li><strong>Password</strong>: The password set when creating the mailbox</li>
+</ul>
+<div class="callout callout-info">
+    <strong>Tip</strong> Webmail and IMAP share the same set of user credentials. After logging into Webmail, IMAP clients can also access the same mailbox simultaneously.
+</div>
+
+<h2>Mail Management</h2>
+
+<h3>Mail List</h3>
+<p>Upon login, you will enter the inbox by default, showing the full list of emails. Each email displays:</p>
+<ul>
+    <li>Sender</li>
+    <li>Subject</li>
+    <li>Date and time</li>
+    <li>Email size</li>
+    <li>Whether it contains attachments</li>
+    <li>Read status (read/unread)</li>
+    <li>Labels</li>
+</ul>
+
+<h3>Mail Actions</h3>
+<ul>
+    <li><strong>Read</strong>: Click the email subject to open details and view sender, recipients, body, and attachments</li>
+    <li><strong>Search</strong>: Search emails by sender, recipient, subject, or body content</li>
+    <li><strong>Move</strong>: Select emails and move them to other folders</li>
+    <li><strong>Mark</strong>: Mark as read/unread, add star, set labels</li>
+    <li><strong>Delete</strong>: Move to trash (can be permanently deleted or restored)</li>
+    <li><strong>Batch Operations</strong>: Multi-select to batch delete, move, or mark emails</li>
+    <li><strong>Export</strong>: Download emails as .eml files, or select multiple emails and package them as a ZIP download</li>
+</ul>
+
+<h3>Compose</h3>
+<p>Click the "Compose" button to enter the compose window:</p>
+<ul>
+    <li><strong>To</strong>: Enter an email address directly, or select from your contact list</li>
+    <li><strong>Cc / Bcc</strong>: Add carbon copy and blind carbon copy recipients</li>
+    <li><strong>Subject</strong>: Email subject</li>
+    <li><strong>Body</strong>: Supports both plain text and HTML format editing</li>
+    <li><strong>Attachments</strong>: Upload attachments, supports drag-and-drop</li>
+    <li><strong>Save Draft</strong>: Unfinished emails can be saved to the drafts folder</li>
+</ul>
+
+<h3>Reply &amp; Forward</h3>
+<ul>
+    <li><strong>Reply</strong>: Reply to the sender</li>
+    <li><strong>Reply All</strong>: Reply to all recipients (including CC)</li>
+    <li><strong>Forward</strong>: Forward the email to others</li>
+</ul>
+
+<h2>Folder Management</h2>
+<p>The system comes with the following preset folders:</p>
+
+<table>
+<thead>
+<tr><th>Folder</th><th>Purpose</th></tr>
+</thead>
+<tbody>
+<tr><td>Inbox</td><td>Received emails</td></tr>
+<tr><td>Sent</td><td>Sent emails</td></tr>
+<tr><td>Drafts</td><td>Unfinished saved emails</td></tr>
+<tr><td>Spam</td><td>Emails flagged as spam by filter rules</td></tr>
+<tr><td>Trash</td><td>Deleted emails (recoverable)</td></tr>
+</tbody>
+</table>
+
+<p>Users can create custom folders to organize and store emails by category.</p>
+
+<h2>Contact Management</h2>
+
+<h3>Contact List</h3>
+<p>On the <strong>Contacts</strong> page you can view and manage all contacts:</p>
+<ul>
+    <li>Add contacts (name, email, phone, notes)</li>
+    <li>Edit and delete contacts</li>
+    <li>Search contacts</li>
+    <li>Import / export contacts</li>
+</ul>
+
+<h3>Contact Groups</h3>
+<ul>
+    <li>Create groups to organize contacts</li>
+    <li>Send bulk emails to group members</li>
+</ul>
+
+<h2>Personal Settings</h2>
+
+<h3>Account Settings</h3>
+<ul>
+    <li>Change password</li>
+    <li>Edit profile (name, signature)</li>
+</ul>
+
+<h3>Mail Settings</h3>
+<ul>
+    <li>Number of emails displayed per page</li>
+    <li>Include original message when replying</li>
+    <li>Default signature</li>
+</ul>
+
+<h2>Sign Out</h2>
+<p>After use, click the logout button in the top right corner to securely sign out of Webmail.</p>
+
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,196 @@
+# DNS nameservers for DNS lookups (feature extraction, DKIM, SPF).
+# Supports multiple servers for failover. When empty, system-configured DNS servers are used.
+dns:
+  servers:
+    - "8.8.8.8"
+    - "114.114.114.114"
+
+# DSN: MySQL (or other RDBMS) connection string
+dsn: "${EASYMAIL_DSN:easymail:easymail@tcp(192.168.1.168:3306)/easymail?charset=utf8&parseTime=True&loc=Local}"
+# Database driver: mysql, postgres, sqlite3 (default: mysql)
+db_driver: mysql
+
+# Redis grouped settings
+redis:
+  addr: "192.168.1.168:6379"
+  password: "${EASYMAIL_REDIS_PASSWORD:redis_passwd}"
+  # required: if true, fail startup when Redis is unreachable
+  required: true
+
+heartbeat_second: 5
+log_file: logs/easymail.log
+auto_migrate: true
+
+# Mail storage: local directory + per-mailbox mail.sqlite (shared by LMTP and storage layer)
+storage:
+  driver: local
+  local:
+    - root: ./storage
+      storage_id: 0
+  sqlite:
+    busy_timeout_ms: 5000
+    max_open_conns: 1
+    wal: true
+
+# Dovecot auth (cmd/dovecot)
+dovecot:
+  enable: true
+  listen: "0.0.0.0:10025"
+  family: tcp
+  logs:
+    enable: true
+    file: logs/dovecot.log
+    level: info
+    rotate: false
+    max_size: 100MB
+    max_backups: 10
+  parameter:
+    debug: "true"
+
+# Postfix smtpd_milters (internal/pkg/milter, can start together with main process)
+milter:
+  enable: true
+  listen: "0.0.0.0:10026"
+  family: tcp
+  logs:
+    enable: true
+    file: logs/milter.log
+    level: info
+    rotate: false
+    max_size: 100MB
+    max_backups: 10
+  # Anti-spam rule engine + optional remote model inference client (gRPC)
+  filter:
+    enable: true
+    rules:
+      default_action: accept
+      log_feature_snapshot: true
+      log_condition_trace: true
+      skip_for_compose_delivery: true
+      stage_timeout_ms: 5000
+      # Milter SMFIR_REPLYCODE triplet when rule action is reject (body stage)
+      reject_reply:
+        smtp_code: "550"
+        enhanced_code: "5.7.1"
+        message: "Spam detected by EasyMail"
+    classify_model:
+      enable: true
+      endpoint: "127.0.0.1:50051"
+      infer_deadline_ms: 0 # 0 = use filter.rules.stage_timeout_ms; if still 0, 30s
+      verbose_infer_logs: false
+    # ClamAV antivirus engine (clamd TCP/Unix Socket)
+    clamav:
+      enable: true
+      addr: "192.168.1.168:3310"
+      timeout_ms: 300000 # default 300000 (5 minutes)
+      max_scan_size: 0 # 0 = follow clamd config
+      scan_attachments: true
+      scan_body: true
+
+# SMTP: SMTP client configuration for sending emails.
+# Configure your SMTP server here. No AUTH required - emails are submitted directly.
+smtp:
+  enable: true
+  server: "192.168.1.168"  # SMTP server address (e.g., smtp.example.com:587)
+  port: 25                    # SMTP port (587 for STARTTLS, 465 for SSL/TLS)
+  use_starttls: false           # Use STARTTLS (port 587)
+  use_tls: false               # Use SSL/TLS directly (port 465)
+  insecure_skip_verify: true  # Skip TLS certificate verification
+  from_address: "noreply@example.com"  # Default from address for system emails
+  timeout_sec: 5              # Connection timeout in seconds
+  logs:
+    enable: true
+    file: logs/smtp.log
+    level: info
+    rotate: false
+    max_size: 100MB
+    max_backups: 10
+
+# Classify Model Worker: standalone gRPC server (predictor pool syncs from DB)
+classifier:
+  enable: true
+  listen: "127.0.0.1:50051"
+  family: tcp
+  max_concurrent: 5
+  infer_timeout_ms: 3000
+  # ONNX Runtime shared library path (optional; env EASYMAIL_ONNXRUNTIME_PATH overrides)
+  onnx_runtime_lib: "D:/onnxruntime.dll"
+  # FastText CLI path for supervised training (empty = no training in admin)
+  fasttext_executable: "D:/Projects/fasttext/fasttext.exe"
+  # Model storage root: model_root/<model_name>/model.bin
+  model_root: "D:/easymail/classify_models"
+  logs:
+    enable: true
+    file: logs/classifier.log
+    level: info
+    rotate: false
+
+# LMTP delivery (cmd/lmtp)
+lmtp:
+  enable: true
+  listen: "0.0.0.0:10027"
+  family: tcp
+  logs:
+    enable: true
+    file: logs/lmtp.log
+    level: info
+    rotate: false
+    max_size: 100MB
+    max_backups: 10
+
+# Admin HTTP API
+admin:
+  enable: true
+  listen: "0.0.0.0:8000"
+  #tls_enable: true       # Enable HTTPS (TLS)
+  #cert_file: "config/test.crt"   # Certificate file path (PEM, use certificate_file as alias)
+  #key_file: "config/test.key"     # Private key file path (PEM, use certificate_key as alias)
+  # static_path: "D:/Projects/easymail/frontend/admin/dist"
+  logs:
+    enable: true
+    file: logs/admin.log
+    level: info
+    rotate: false
+    max_size: 100MB
+    max_backups: 10
+  jwt:
+    secret: "${EASYMAIL_ADMIN_JWT_SECRET:uZ6pL1aQ6zX5cC0pU4cA8aP2cT9qI8lS}"
+    expire_hours: 24
+
+# Webmail HTTP API (cmd/webmail or main launcher)
+webmail:
+  enable: true
+  listen: "0.0.0.0:8080"
+  # tls_enable: false       # Enable HTTPS (TLS)
+  # cert_file: "cert.pem"   # Certificate file path (PEM, use certificate_file as alias)
+  # key_file: "key.pem"     # Private key file path (PEM, use certificate_key as alias)
+  contacts_sqlite_path: ""  # empty = use storage.local/contact.sqlite
+  cors_allowed_origins: []
+  logs:
+    enable: true
+    file: logs/webmail.log
+    level: info
+    rotate: false
+    max_size: 100MB
+    max_backups: 10
+  jwt:
+    secret: "${EASYMAIL_WEBMAIL_JWT_SECRET:vW9jH9wN1bV0iF1rO1gD8wF9wP4fQ4nW}"
+    expire_hours: 24
+
+# IMAP4rev2 (RFC 9051) with STARTTLS and IDLE support
+imap:
+  enable: true
+  listen: "0.0.0.0:1143"
+  family: tcp
+  tls_enable: false
+  cert_file: ""
+  key_file: ""
+  starttls: false
+  debug: true
+  logs:
+    enable: true
+    file: logs/imap.log
+    level: info
+    rotate: true
+    max_size: 100MB
+    max_backups: 10
