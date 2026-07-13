@@ -75,7 +75,7 @@ EasyMail 替代了对 Dovecot（认证 + IMAP）、Rspamd/SpamAssassin 以及自
 | 面板 | 地址 | 用户名 | 密码 |
 |-------|-----|----------|----------|
 | **管理后台** | https://admin.easymail.my | `admin` | `admin888` |
-| **Webmail** | https://mail.easymail.my | `test@easymail.my` | `test123` |
+| **Webmail** | https://mail.easymail.my | `test@easymail.my` | `test@123` |
 
 ---
 

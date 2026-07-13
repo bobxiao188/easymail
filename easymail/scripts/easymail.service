@@ -26,8 +26,8 @@ Group=easymail
 WorkingDirectory=/opt/easymail
 
 # Startup command
-ExecStart=/opt/easymail/bin/easymail.sh start
-ExecStop=/opt/easymail/bin/easymail.sh stop
+ExecStart=/opt/easymail/easymail.sh start
+ExecStop=/opt/easymail/easymail.sh stop
 
 # Graceful shutdown
 KillSignal=SIGTERM

@@ -75,7 +75,7 @@ Try EasyMail online right now:
 | Panel | URL | Username | Password |
 |-------|-----|----------|----------|
 | **Admin Panel** | https://admin.easymail.my | `admin` | `admin888` |
-| **Webmail** | https://mail.easymail.my | `test@easymail.my` | `test123` |
+| **Webmail** | https://mail.easymail.my | `test@easymail.my` | `test@123` |
 
 ---
 

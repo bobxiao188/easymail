@@ -147,6 +147,7 @@ type PostfixConfigService interface {
 
 	// Configuration generation and delivery
 	GeneratePreview(ctx context.Context) (*ConfigPreview, error)
+	GenerateInstallScript(ctx context.Context) (string, error)
 	PushConfig(ctx context.Context, agentID shared.GlobalID) error
 	ApplyConfig(ctx context.Context, agentID shared.GlobalID) error
 	RollbackConfig(ctx context.Context, agentID shared.GlobalID) error
@@ -563,6 +564,51 @@ func (s *postfixConfigServiceImpl) GeneratePreview(ctx context.Context) (*Config
 	return s.assembleConfig(ctx)
 }
 
+// GenerateInstallScript generates a shell script that can be piped via "curl -s URL | sh"
+// to apply the Postfix configuration without requiring the postfix-agent binary.
+func (s *postfixConfigServiceImpl) GenerateInstallScript(ctx context.Context) (string, error) {
+	preview, err := s.assembleConfig(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	// Parse the rendered main.cf into individual param lines
+	paramLines := make([]string, 0)
+	for _, line := range strings.Split(preview.MainCf, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") || strings.HasPrefix(line, "virtual_mailbox_domains") {
+			continue
+		}
+		if idx := strings.Index(line, "="); idx > 0 {
+			name := strings.TrimSpace(line[:idx])
+			if name != "" {
+				paramLines = append(paramLines, line)
+			}
+		}
+	}
+
+	// Ensure mainCf ends with newline for clean heredoc syntax
+	mainCf := preview.MainCf
+	if !strings.HasSuffix(mainCf, "\n") {
+		mainCf += "\n"
+	}
+
+	data := installScriptData{
+		GeneratedAt: time.Now().Format(time.RFC3339),
+		MainCf:      mainCf,
+		Params:      paramLines,
+		ConfigHash:  preview.ConfigHash,
+	}
+
+	tmpl := template.Must(template.New("install.sh").Parse(installScriptTemplate))
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return "", fmt.Errorf("render install script: %w", err)
+	}
+
+	return buf.String(), nil
+}
+
 func (s *postfixConfigServiceImpl) PushConfig(ctx context.Context, agentID shared.GlobalID) error {
 	agent, err := s.agentRepo.FindByID(ctx, agentID)
 	if err != nil {
@@ -844,6 +890,69 @@ const mainCfTemplate = `# === EasyMail managed config ===
 # Virtual mailbox domains (auto-synced from EasyMail)
 {{if .HasDomains}}virtual_mailbox_domains = {{ .DomainList | join ", " }}{{else}}# No active domains configured{{end}}
 # === End EasyMail managed config ===
+`
+
+// installScriptData is the template data for the Postfix install shell script.
+type installScriptData struct {
+	GeneratedAt string
+	MainCf      string
+	Params      []string
+	ConfigHash  string
+}
+
+const installScriptTemplate = `#!/bin/sh
+# EasyMail Postfix auto-install script
+# Generated at: {{ .GeneratedAt }}
+# Usage: curl -s http://<easymail-admin>/api/v1/admin/postfix/install-script | sudo sh
+
+set -e
+
+POSTFIX_DIR="${POSTFIX_DIR:-/etc/postfix}"
+BACKUP_DIR="${BACKUP_DIR:-/etc/postfix/backups}"
+TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
+
+# Ensure running as root
+if [ "$(id -u)" -ne 0 ]; then
+  echo "This script must be run as root. Try: sudo sh"
+  exit 1
+fi
+
+# Create backup directory
+mkdir -p "$BACKUP_DIR/$TIMESTAMP"
+
+# Backup current easymail.cf if exists
+if [ -f "$POSTFIX_DIR/easymail.cf" ]; then
+  cp "$POSTFIX_DIR/easymail.cf" "$BACKUP_DIR/$TIMESTAMP/easymail.cf.bak"
+  echo "Backed up current easymail.cf to $BACKUP_DIR/$TIMESTAMP/"
+fi
+
+# Write new config (heredoc with single-quoted delimiter prevents shell expansion)
+cat > "$POSTFIX_DIR/easymail.cf" << 'EASYMAIL_EOF'
+{{ .MainCf }}EASYMAIL_EOF
+echo "Wrote easymail.cf to $POSTFIX_DIR/"
+
+# Apply each parameter via postconf (heredoc ensures literal values, no injection risk)
+{{range $i, $p := .Params}}postconf -e "$(cat <<'PARAM_{{$i}}'
+{{$p}}
+PARAM_{{$i}}"
+{{end}}
+# Validate configuration
+echo "Validating Postfix configuration..."
+postfix check
+echo "Configuration validation passed."
+
+# Reload Postfix
+echo "Reloading Postfix..."
+postfix reload
+echo "Postfix reloaded successfully."
+
+# Cleanup old backups (keep last 10)
+ls -t "$BACKUP_DIR" 2>/dev/null | tail -n +11 | while read d; do
+  rm -rf "$BACKUP_DIR/$d"
+done
+
+echo "=== EasyMail Postfix configuration applied successfully ==="
+echo "Config hash: {{ .ConfigHash }}"
 `
 
 // ==================== Queue Management ====================

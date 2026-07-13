@@ -130,7 +130,7 @@ func (PublicSamplePO) TableName() string { return "public_samples" }
 // PublicSampleCategoryPO is a managed category for public samples.
 type PublicSampleCategoryPO struct {
 	ID          uint      `gorm:"primaryKey" json:"id"`
-	Name        string    `gorm:"column:name;type:varchar(255);uniqueIndex:uk_public_sample_category_name;not null" json:"name"`
+	Name        string    `gorm:"column:name;type:varchar(128);uniqueIndex:uk_public_sample_category_name;not null" json:"name"`
 	Description string    `gorm:"column:description;type:varchar(500)" json:"description"`
 	SampleCount int64     `gorm:"column:sample_count;default:0" json:"sampleCount"`
 	CreatedAt   time.Time `gorm:"column:created_at;autoCreateTime" json:"createdAt"`

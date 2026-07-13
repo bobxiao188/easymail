@@ -299,6 +299,19 @@ func (h *Handler) PreviewPostfixConfigHandler(c *gin.Context) {
 	jsonData(c, preview)
 }
 
+// GeneratePostfixInstallScriptHandler generates a shell script for manual Postfix configuration.
+// The script can be piped directly: curl -s http://.../install-script | sudo sh
+func (h *Handler) GeneratePostfixInstallScriptHandler(c *gin.Context) {
+	script, err := h.postfixService.GenerateInstallScript(c.Request.Context())
+	if err != nil {
+		jsonError(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	c.Header("Content-Type", "text/x-shellscript")
+	c.Header("Content-Disposition", "attachment; filename=\"install-easymail-postfix.sh\"")
+	c.String(http.StatusOK, script)
+}
+
 // PushPostfixConfigHandler pushes configuration to an agent (without applying).
 func (h *Handler) PushPostfixConfigHandler(c *gin.Context) {
 	id, err := shared.ParseGlobalID(c.Param("id"))

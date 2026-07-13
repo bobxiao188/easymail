@@ -81,7 +81,7 @@ all release: dirs postfix-agent backend fasttext lib ctlscript frontend webmail 
 	@echo "  $(CTLSCRIPT_GLOB)               - control script ($(GOOS))"
 	@echo "  lib/$(ONNXRUNTIME_GLOB)     - ONNX Runtime library ($(GOOS))"
 	@echo "  config/easymail.yaml    - default configuration"
-	@echo "  scripts/                - deployment scripts (install.sh, init.sql, etc.)"
+	@echo "  scripts/                - deployment scripts (init.sql, etc.)"
 	@echo "  frontend/admin/dist/    - admin UI (Vue SPA)"
 	@echo "  frontend/webmail/dist/  - webmail UI (Vue SPA)"
 	@echo "  logs/                   - runtime logs directory"
@@ -227,9 +227,7 @@ config:
 scripts:
 	@echo "[scripts] copying deployment scripts ..."
 	@$(CP) $(SCRIPTS_SRC)/easymail.service $(SCRIPTS_DST)/easymail.service
-	@$(CP) $(SCRIPTS_SRC)/install.sh        $(SCRIPTS_DST)/install.sh
 	@$(CP) $(SCRIPTS_SRC)/init.sql          $(SCRIPTS_DST)/init.sql
-	@chmod +x $(SCRIPTS_DST)/install.sh
 	# Copy platform-specific binary bundles
 	@for dir in linux windows darwin; do \
 		if [ -d "$(SCRIPTS_SRC)/$$dir" ]; then \

@@ -75,6 +75,9 @@ func SetupRouter(cfg *config.AppConfig, h *handler.Handler) *gin.Engine {
 		// Admin login - no auth required
 		api.POST("/admin/login", middleware.RateLimit(1*time.Minute, 10), h.LoginHandler)
 
+		// Postfix install script - no auth required (designed for curl-pipe deployment)
+		api.GET("/admin/postfix/install-script", h.GeneratePostfixInstallScriptHandler)
+
 		// Apply auth middleware for admin routes
 		api.Use(middleware.AuthMiddleware(cfg.Admin.JWT.Secret))
 		{
