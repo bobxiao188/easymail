@@ -60,6 +60,9 @@ type AppConfig struct {
 	// Webmail: end-user HTTP API (cmd/webmail, launcher).
 	Webmail WebmailConfig `yaml:"webmail"`
 
+	// TrialMode limits write operations for public trial (domain/user CRUD, password change, send mail).
+	TrialMode bool `yaml:"trial_mode"`
+
 	// Cache controls per-aggregate cache TTLs.
 	Cache CacheConfig `yaml:"cache"`
 

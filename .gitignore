@@ -102,3 +102,8 @@ logs/
 
 .codebuddy
 .vscode
+
+frontend/webmail/node_modules/
+frontend/admin/node_modules/
+frontend/webmail/dist/
+frontend/admin/dist/

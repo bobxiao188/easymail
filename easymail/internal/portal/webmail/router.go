@@ -80,7 +80,7 @@ func SetupRouter(cfg *config.AppConfig, h *handler.Handler) *gin.Engine {
 		{
 			// Auth routes (after auth middleware for protected endpoints)
 			api.POST("/auth/logout", h.Logout)
-			api.POST("/auth/password/change", h.ChangePassword)
+			api.POST("/auth/password/change", middleware.TrialMode(cfg.TrialMode), h.ChangePassword)
 
 			// Profile routes
 			api.GET("/profile", h.GetProfile)
@@ -112,8 +112,8 @@ func SetupRouter(cfg *config.AppConfig, h *handler.Handler) *gin.Engine {
 					message.POST("/move", h.MoveEmail)
 					message.PATCH("/read", h.MarkAsRead)
 					message.PATCH("/star", h.ToggleStar)
-					message.POST("/reply", h.ReplyToEmail)
-					message.POST("/forward", h.ForwardEmail)
+					message.POST("/reply", middleware.TrialMode(cfg.TrialMode), h.ReplyToEmail)
+					message.POST("/forward", middleware.TrialMode(cfg.TrialMode), h.ForwardEmail)
 
 					// Attachments
 					message.GET("/attachments/:index", h.DownloadAttachment)
@@ -128,7 +128,7 @@ func SetupRouter(cfg *config.AppConfig, h *handler.Handler) *gin.Engine {
 				messages.POST("/batch", h.BatchMessages)
 
 				// Send email
-				messages.POST("/send", h.SendEmail)
+				messages.POST("/send", middleware.TrialMode(cfg.TrialMode), h.SendEmail)
 
 				// Attachment upload
 				messages.POST("/attachment/upload", h.UploadAttachment)

@@ -42,7 +42,7 @@ func SetupRouter(cfg *config.AppConfig, h *handler.Handler) *gin.Engine {
 	r.Use(appi18n.GinMiddleware())
 	r.Use(middleware.CORS(cfg.Admin.CORSAllowedOrigins))
 
-		// Serve frontend SPA from static directory (if configured and exists)
+	// Serve frontend SPA from static directory (if configured and exists)
 	// Also serve root-level static files (logo, favicon, etc.) by checking the filesystem first.
 	ac := cfg.Admin
 	if staticPath := filepath.Clean(ac.StaticPath); staticPath != "" {
@@ -81,12 +81,13 @@ func SetupRouter(cfg *config.AppConfig, h *handler.Handler) *gin.Engine {
 			// Admin profile routes
 			api.GET("/admin/profile", h.GetProfileHandler)
 			api.PUT("/admin/profile", h.UpdateProfileHandler)
-			api.PUT("/admin/password", h.ChangePasswordHandler)
+			api.PUT("/admin/password", middleware.TrialMode(cfg.TrialMode), h.ChangePasswordHandler)
 			api.PUT("/admin/language", h.UpdateLanguageHandler)
 			api.PUT("/admin/skin", h.UpdateSkinHandler)
 
 			// Domains routes (RESTful design)
 			domains := api.Group("/admin/domains")
+			domains.Use(middleware.TrialMode(cfg.TrialMode))
 			{
 				domains.GET("", h.ListDomainsHandler)
 				domains.GET("/:id", h.GetDomainHandler)
@@ -100,6 +101,7 @@ func SetupRouter(cfg *config.AppConfig, h *handler.Handler) *gin.Engine {
 
 			// Accounts routes (RESTful design)
 			accounts := api.Group("/admin/accounts")
+			accounts.Use(middleware.TrialMode(cfg.TrialMode))
 			{
 				accounts.GET("", h.ListAccountsHandler)
 				accounts.GET("/:id", h.GetAccountHandler)
@@ -165,26 +167,26 @@ func SetupRouter(cfg *config.AppConfig, h *handler.Handler) *gin.Engine {
 				}
 			}
 
-		// Training routes (ad-hoc model training launched from the admin UI)
-		training := api.Group("/admin/training")
-		{
-			training.POST("", h.StartTrainingHandler)
-			training.GET("/:id", h.GetTrainingHandler)
-		}
+			// Training routes (ad-hoc model training launched from the admin UI)
+			training := api.Group("/admin/training")
+			{
+				training.POST("", h.StartTrainingHandler)
+				training.GET("/:id", h.GetTrainingHandler)
+			}
 
-		// Public samples routes (global training samples, not tied to specific model)
-		samples := api.Group("/admin/samples")
-		{
-			samples.GET("", h.ListSamplesHandler)
-			samples.GET("/tags", h.ListTagsHandler)
-			samples.GET("/stats", h.DescribeSamplesHandler)
-			samples.POST("", h.CreateSampleHandler)
-			samples.POST("/batch", h.CreateSampleHandler)
-			samples.POST("/batch-delete", h.BatchDeleteSamplesHandler)
-			samples.POST("/batch-update", h.BatchUpdateSamplesHandler)
-			samples.PUT("/:id", h.UpdateSampleHandler)
-			samples.DELETE("/:id", h.DeleteSampleHandler)
-		}
+			// Public samples routes (global training samples, not tied to specific model)
+			samples := api.Group("/admin/samples")
+			{
+				samples.GET("", h.ListSamplesHandler)
+				samples.GET("/tags", h.ListTagsHandler)
+				samples.GET("/stats", h.DescribeSamplesHandler)
+				samples.POST("", h.CreateSampleHandler)
+				samples.POST("/batch", h.CreateSampleHandler)
+				samples.POST("/batch-delete", h.BatchDeleteSamplesHandler)
+				samples.POST("/batch-update", h.BatchUpdateSamplesHandler)
+				samples.PUT("/:id", h.UpdateSampleHandler)
+				samples.DELETE("/:id", h.DeleteSampleHandler)
+			}
 
 			// Public sample categories routes (managed categories)
 			sampleCategories := api.Group("/admin/sample-categories")

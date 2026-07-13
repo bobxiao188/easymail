@@ -22,6 +22,9 @@ heartbeat_second: 5
 log_file: logs/easymail.log
 auto_migrate: true
 
+# trial_mode: when true, blocks domain/user CRUD in admin, and password change / send mail in webmail
+trial_mode: false
+
 # Mail storage: local directory + per-mailbox mail.sqlite (shared by LMTP and storage layer)
 storage:
   driver: local
